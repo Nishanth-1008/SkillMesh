@@ -17,6 +17,15 @@ const App = {
     messages: Views.messages,
     organizations: Views.organizations,
     organization: Views.organization,
+    // Phases 3–6
+    analytics: Views.analytics,
+    events: Views.events,
+    leaderboard: Views.leaderboard,
+    hub: Views.hub,
+    emergency: Views.emergency,
+    developers: Views.developers,
+    intelligence: Views.intelligence,
+    autonomy: Views.autonomy,
   },
 
   navigate(route, params = {}) {
@@ -38,15 +47,23 @@ const App = {
     const items = [
       ['home', 'Home'],
       ['search', 'AI Search'],
-      ['teams', 'Team Builder'],
+      ['teams', 'Teams'],
       ['communities', 'Communities'],
+      ['analytics', 'Intel'],
+      ['events', 'Events'],
+      ['hub', 'Hub'],
+      ['emergency', 'Emergency'],
+      ['intelligence', 'Global'],
+      ['autonomy', 'Agents'],
+      ['leaderboard', 'Rewards'],
       ['projects', 'Projects'],
-      ['opportunities', 'Opportunities'],
-      ['recommendations', 'For You'],
+      ['opportunities', 'Opps'],
       ['organizations', 'Orgs'],
+      ['developers', 'Dev'],
     ];
     if (loggedIn) {
       items.push(['messages', 'Inbox']);
+      items.push(['recommendations', 'For You']);
       items.push(['dashboard', 'Profile']);
     }
 

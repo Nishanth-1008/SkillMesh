@@ -1,7 +1,7 @@
 {
   "name": "skillmesh-backend",
-  "version": "0.2.0",
-  "description": "SkillMesh Phase 2 backend — AI team builder, projects, trust, opportunities, messaging, organizations. Zero external dependencies (Node.js builtins only).",
+  "version": "0.6.0",
+  "description": "SkillMesh Phases 1–6 — Autonomous Community Intelligence. Zero external dependencies.",
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {

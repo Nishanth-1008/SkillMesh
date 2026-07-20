@@ -293,6 +293,19 @@ label { font-size: 12.5px; font-weight: 600; letter-spacing: 0.3px; text-transfo
 .msg-row.unread { background: rgba(77, 163, 255, 0.05); border-radius: 10px; padding: 12px; margin-bottom: 6px; }
 .msg-row.announcement { border-left: 3px solid var(--amber); padding-left: 12px; }
 
+.stat-big {
+  font-size: 42px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  line-height: 1.1;
+  margin: 8px 0;
+}
+
+.navlinks button { font-size: 12.5px; padding: 7px 10px; }
+
 /* ---------- Graph ---------- */
 svg.graph-svg { width: 100%; height: 520px; background: radial-gradient(circle at 50% 50%, rgba(77,163,255,0.04), transparent 70%); border-radius: var(--radius); border: 1px solid var(--panel-border); }
 

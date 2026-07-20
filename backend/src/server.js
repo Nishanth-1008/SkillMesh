@@ -2,7 +2,7 @@ const http = require('http');
 const { Router } = require('./utils/router');
 const { load } = require('./db');
 
-load(); // initialize / load db.json on boot
+load();
 
 const app = new Router();
 
@@ -10,11 +10,22 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'skillmesh-backend',
-    phase: 2,
+    phase: 6,
     features: [
+      // 1
       'auth', 'communities', 'profiles', 'graph', 'ai-search',
+      // 2
       'team-builder', 'projects', 'recommendations', 'trust',
       'opportunities', 'messaging', 'organizations',
+      // 3
+      'analytics', 'events', 'gamification', 'admin',
+      // 4
+      'federation', 'public-hub', 'emergency', 'integrations',
+      'webhooks', 'api-keys', 'plugins',
+      // 5
+      'global-network', 'reasoning', 'passport', 'impact', 'scenarios', 'research',
+      // 6
+      'agents', 'digital-twin', 'community-memory', 'auto-teams', 'community-os',
     ],
     time: new Date().toISOString(),
   });
@@ -31,6 +42,7 @@ function mount(prefix, routeModule) {
   });
 }
 
+// Phase 1–2
 mount('/api/auth', './routes/auth');
 mount('/api/communities', './routes/communities');
 mount('/api/profiles', './routes/profiles');
@@ -44,6 +56,14 @@ mount('/api/opportunities', './routes/opportunities');
 mount('/api/messages', './routes/messages');
 mount('/api/organizations', './routes/organizations');
 
+// Phase 3–6
+mount('/api/analytics', './routes/analytics');
+mount('/api/events', './routes/events');
+mount('/api/gamification', './routes/gamification');
+mount('/api/ecosystem', './routes/ecosystem');
+mount('/api/intelligence', './routes/intelligence');
+mount('/api/autonomy', './routes/autonomy');
+
 const PORT = process.env.PORT || 4000;
 
 const server = http.createServer((req, res) => {
@@ -56,7 +76,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`[SkillMesh] backend listening on http://localhost:${PORT}`);
-  console.log(`[SkillMesh] Phase 2 — Intelligent Collaboration`);
+  console.log(`[SkillMesh] Phases 1–6 complete — Autonomous Community Intelligence`);
   console.log(`[SkillMesh] try: curl http://localhost:${PORT}/health`);
 });
 

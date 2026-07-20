@@ -92,4 +92,60 @@ const Api = {
   createOrganization: (payload) => Api._request('POST', '/organizations', { body: payload, auth: true }),
   joinOrganization: (id) => Api._request('POST', `/organizations/${id}/join`, { auth: true }),
   recruit: (id, payload) => Api._request('POST', `/organizations/${id}/recruit`, { body: payload, auth: true }),
+
+  // Phase 3
+  communityAnalytics: (id) => Api._request('GET', `/analytics/community/${id}`),
+  communityHealth: (id) => Api._request('GET', `/analytics/community/${id}/health`),
+  myInsights: () => Api._request('GET', '/analytics/me', { auth: true }),
+  listEvents: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return Api._request('GET', `/events${qs ? `?${qs}` : ''}`);
+  },
+  createEvent: (payload) => Api._request('POST', '/events', { body: payload, auth: true }),
+  registerEvent: (id) => Api._request('POST', `/events/${id}/register`, { auth: true }),
+  leaderboard: (communityId) =>
+    Api._request('GET', `/gamification/leaderboard${communityId ? `?communityId=${communityId}` : ''}`),
+  myGamification: () => Api._request('GET', '/gamification/me', { auth: true }),
+  adminUsers: () => Api._request('GET', '/gamification/admin/users', { auth: true }),
+
+  // Phase 4
+  publicHub: () => Api._request('GET', '/ecosystem/hub'),
+  listEmergencies: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return Api._request('GET', `/ecosystem/emergencies${qs ? `?${qs}` : ''}`);
+  },
+  createEmergency: (payload) => Api._request('POST', '/ecosystem/emergencies', { body: payload, auth: true }),
+  respondEmergency: (id, eta) =>
+    Api._request('POST', `/ecosystem/emergencies/${id}/respond`, { body: { eta }, auth: true }),
+  partnerships: () => Api._request('GET', '/ecosystem/partnerships'),
+  integrations: () => Api._request('GET', '/ecosystem/integrations', { auth: true }),
+  connectIntegration: (payload) => Api._request('POST', '/ecosystem/integrations', { body: payload, auth: true }),
+  createApiKey: (payload) => Api._request('POST', '/ecosystem/api-keys', { body: payload, auth: true }),
+  listPlugins: () => Api._request('GET', '/ecosystem/plugins'),
+
+  // Phase 5
+  globalNetwork: () => Api._request('GET', '/intelligence/network'),
+  reason: (payload) => Api._request('POST', '/intelligence/reason', { body: payload, auth: true }),
+  forecast: (communityId) => Api._request('GET', `/intelligence/forecast/${communityId}`),
+  syncPassport: () => Api._request('POST', '/intelligence/passport/sync', { auth: true }),
+  getPassport: (userId) => Api._request('GET', `/intelligence/passport/${userId}`),
+  impact: (communityId) =>
+    Api._request('GET', `/intelligence/impact${communityId ? `?communityId=${communityId}` : ''}`),
+  recordImpact: (payload) => Api._request('POST', '/intelligence/impact', { body: payload, auth: true }),
+  runScenario: (payload) => Api._request('POST', '/intelligence/scenarios', { body: payload, auth: true }),
+  listScenarios: (communityId) =>
+    Api._request('GET', `/intelligence/scenarios${communityId ? `?communityId=${communityId}` : ''}`),
+
+  // Phase 6
+  listAgents: (communityId) => Api._request('GET', `/autonomy/agents/${communityId}`),
+  runAgents: (communityId, payload) =>
+    Api._request('POST', `/autonomy/agents/${communityId}/run`, { body: payload, auth: true }),
+  digitalTwin: (communityId) => Api._request('GET', `/autonomy/twin/${communityId}`),
+  communityMemory: (communityId) => Api._request('GET', `/autonomy/memory/${communityId}`),
+  brainstorm: (communityId, prompt) =>
+    Api._request('POST', `/autonomy/brainstorm/${communityId}`, { body: { prompt }, auth: true }),
+  autoTeams: (communityId) =>
+    Api._request('POST', `/autonomy/auto-teams/${communityId}`, { auth: true }),
+  osPulse: (communityId, goal) =>
+    Api._request('POST', `/autonomy/os/${communityId}/pulse`, { body: { goal }, auth: true }),
 };

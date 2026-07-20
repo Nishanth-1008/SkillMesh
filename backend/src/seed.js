@@ -232,11 +232,125 @@ state.messages.push({
   createdAt: new Date().toISOString(),
 });
 
+// --- Phase 3–6 seed data ---
+
+// Second community for federation demos
+const riverside = {
+  id: crypto.randomUUID(),
+  name: 'Riverside Makers Collective',
+  description: 'Neighboring maker community — used to demo cross-community federation.',
+  ownerId: sneha.id,
+  createdAt: new Date().toISOString(),
+};
+state.communities.push(riverside);
+for (const u of [sneha, kabir]) {
+  state.communityMembers.push({
+    id: crypto.randomUUID(), communityId: riverside.id, userId: u.id,
+    role: u.id === sneha.id ? 'owner' : 'member', joinedAt: new Date().toISOString(),
+  });
+  addRelationship(state, {
+    fromType: 'person', fromId: u.id, toType: 'community', toId: riverside.id, kind: 'member_of',
+  });
+}
+
+// Event
+const event = {
+  id: crypto.randomUUID(),
+  communityId: community.id,
+  title: 'Greenwood First-Aid Workshop',
+  description: 'Hands-on CPR and first-aid training for residents.',
+  type: 'workshop',
+  startAt: '2026-08-01T10:00:00.000Z',
+  endAt: '2026-08-01T13:00:00.000Z',
+  location: 'Greenwood Community Hall',
+  creatorId: priya.id,
+  skillsNeeded: ['first aid', 'teaching'],
+  status: 'upcoming',
+  impactReport: null,
+  createdAt: new Date().toISOString(),
+};
+state.events.push(event);
+state.eventAttendance.push(
+  { id: crypto.randomUUID(), eventId: event.id, userId: raj.id, status: 'registered', checkedInAt: null },
+  { id: crypto.randomUUID(), eventId: event.id, userId: sneha.id, status: 'registered', checkedInAt: null },
+);
+
+// Gamification baseline
+const { evaluateAchievements, awardPoints, ensurePoints } = require('./services/gamification');
+const { ensureAgents, buildDigitalTwin, addCommunityMemory } = require('./services/autonomy');
+const { syncPassport, recordImpact } = require('./services/ecosystem');
+
+for (const u of [raj, sneha, arjun, priya, kabir]) {
+  evaluateAchievements(state, u.id);
+  ensurePoints(state, u.id);
+}
+awardPoints(state, raj.id, 40, 'Seed bonus — community founder');
+awardPoints(state, priya.id, 25, 'Seed bonus — NGO lead');
+
+// Partnership (pending → will accept in demos; seed as active)
+state.partnerships.push({
+  id: crypto.randomUUID(),
+  fromCommunityId: community.id,
+  toCommunityId: riverside.id,
+  type: 'collaboration',
+  status: 'active',
+  createdAt: new Date().toISOString(),
+});
+state.federationLinks.push({
+  id: crypto.randomUUID(),
+  communityIds: [community.id, riverside.id],
+  name: 'Greenwood × Riverside Network',
+  region: 'metro',
+  createdAt: new Date().toISOString(),
+});
+
+// Impact records
+recordImpact(state, {
+  communityId: community.id, userId: priya.id,
+  metric: 'people_helped', value: 45, tags: ['health', 'volunteer', 'event'],
+});
+recordImpact(state, {
+  communityId: community.id, userId: raj.id,
+  metric: 'volunteer_hours', value: 12, tags: ['teaching', 'education'],
+});
+
+// Skill passports
+for (const u of [raj, sneha, priya]) syncPassport(state, u.id);
+
+// Agents + digital twin + memory
+ensureAgents(state, community.id);
+buildDigitalTwin(state, community.id);
+addCommunityMemory(state, {
+  communityId: community.id,
+  kind: 'founding',
+  content: 'Greenwood Residents Community founded to make neighborhood skills visible and actionable.',
+  tags: ['history', 'founding'],
+});
+addCommunityMemory(state, {
+  communityId: community.id,
+  kind: 'lesson',
+  content: 'Blood donation camps fill faster when first-aid volunteers are invited 48h ahead.',
+  tags: ['volunteer', 'events'],
+});
+
+// Plugin marketplace seed install
+state.plugins.push({
+  id: crypto.randomUUID(),
+  name: 'csv-export',
+  version: '1.0.0',
+  enabled: true,
+  config: {},
+  installedAt: new Date().toISOString(),
+  installedBy: raj.id,
+});
+
 persist();
 
-console.log('[SkillMesh] Seed complete (Phase 1 + Phase 2).');
+console.log('[SkillMesh] Seed complete (Phases 1–6).');
 console.log(`Community: ${community.name} (${community.id})`);
+console.log(`Federation partner: ${riverside.name} (${riverside.id})`);
 console.log(`Project: ${project.title}`);
 console.log(`Organization: ${ngo.name}`);
+console.log(`Event: ${event.title}`);
 console.log('Demo login (any of these, password: password123):');
 for (const u of [raj, sneha, arjun, priya, kabir]) console.log(`  - ${u.email}`);
