@@ -1,0 +1,407 @@
+{
+  "users": [
+    {
+      "id": "29f607df-2f6c-47ae-9ed2-6d217fb74f1f",
+      "name": "Raj Malhotra",
+      "email": "raj@example.com",
+      "passwordHash": "fc120d02c749b00fffec214c00a9754711c5e7a9feeef4b873858d8112eaf691d3204a501aded5d636a739064553087db127bbca6be7494845a15cfd333e722e",
+      "salt": "4e8a0ef57f65e45768894b8dec9b8810",
+      "location": "Greenwood Sector 4",
+      "availability": "available",
+      "createdAt": "2026-07-20T10:47:48.561Z"
+    },
+    {
+      "id": "cc57fa95-d874-40ab-969e-42dc88e3e371",
+      "name": "Sneha Iyer",
+      "email": "sneha@example.com",
+      "passwordHash": "6b2b9ba6686428798bb28d6139a46c670ca4c67039e5f5d4b2d01d69d4c3e07e63cb59cf8c6349b67f0fec712ed5670b9cdae1555b4b47470951dc4464207247",
+      "salt": "7766b278fd6b67cefe4ae9747c8ddb05",
+      "location": "Greenwood Sector 2",
+      "availability": "available",
+      "createdAt": "2026-07-20T10:47:48.611Z"
+    },
+    {
+      "id": "406ed1af-6c1f-4846-b2f1-46c8387dcb0b",
+      "name": "Arjun Verma",
+      "email": "arjun@example.com",
+      "passwordHash": "c04dbfec03554e3f7a4bce0779bbc8923a54d7a6cc8e22a03c73434faa67d41bc2fb138a9849132d255ed1d9ae36d6c7fffee2716c46a1dd57b2f7a4d1001753",
+      "salt": "328641a8bf838cc9fe7994db4cbe49ac",
+      "location": "Greenwood Sector 4",
+      "availability": "busy",
+      "createdAt": "2026-07-20T10:47:48.662Z"
+    },
+    {
+      "id": "3868b322-f247-484d-8f62-ee44b516a068",
+      "name": "Priya Nair",
+      "email": "priya@example.com",
+      "passwordHash": "7fe8f21b1e97648d4f91dc1c6ffd0e5d2c698804c30aeb48eee11e9f6239d82bfca8ee0e011baae0ad0752f74a32a11437e8f0f9156c3d18c816e31642df8cf3",
+      "salt": "7d062dff01840084e2c0520b111bc1da",
+      "location": "Greenwood Sector 1",
+      "availability": "available",
+      "createdAt": "2026-07-20T10:47:48.712Z"
+    },
+    {
+      "id": "ff6bd4af-c079-4cdd-aec0-26d07710c209",
+      "name": "Kabir Shah",
+      "email": "kabir@example.com",
+      "passwordHash": "2780dcf0c5ff297ea8ab2fc9e875ffae071865bf58df68a3b656030cd0684e7b3f0bffed51a40e2c2f92993091c6b8c08f36aad05fecb5bc2a6190098f7e376f",
+      "salt": "dc1bccab4e786c26852509ec9d1d4018",
+      "location": "Greenwood Sector 3",
+      "availability": "available",
+      "createdAt": "2026-07-20T10:47:48.763Z"
+    }
+  ],
+  "communities": [
+    {
+      "id": "fbe33fee-3f97-45fc-ba7e-78cd6576f793",
+      "name": "Greenwood Residents Community",
+      "description": "A demo neighborhood community used to showcase SkillMesh Phase 1.",
+      "ownerId": "29f607df-2f6c-47ae-9ed2-6d217fb74f1f",
+      "createdAt": "2026-07-20T10:47:48.501Z"
+    }
+  ],
+  "communityMembers": [
+    {
+      "id": "e4b58715-d919-4f13-a460-0011902dc915",
+      "communityId": "fbe33fee-3f97-45fc-ba7e-78cd6576f793",
+      "userId": "29f607df-2f6c-47ae-9ed2-6d217fb74f1f",
+      "role": "owner",
+      "joinedAt": "2026-07-20T10:47:48.763Z"
+    },
+    {
+      "id": "dfe8d4c3-43d1-4f98-94dd-83ead1363964",
+      "communityId": "fbe33fee-3f97-45fc-ba7e-78cd6576f793",
+      "userId": "cc57fa95-d874-40ab-969e-42dc88e3e371",
+      "role": "member",
+      "joinedAt": "2026-07-20T10:47:48.763Z"
+    },
+    {
+      "id": "e9724d8f-8bc2-4a4a-9f62-14ce8e1daa9c",
+      "communityId": "fbe33fee-3f97-45fc-ba7e-78cd6576f793",
+      "userId": "406ed1af-6c1f-4846-b2f1-46c8387dcb0b",
+      "role": "member",
+      "joinedAt": "2026-07-20T10:47:48.763Z"
+    },
+    {
+      "id": "4f9e2adf-d228-493e-a3d6-25fb04711203",
+      "communityId": "fbe33fee-3f97-45fc-ba7e-78cd6576f793",
+      "userId": "3868b322-f247-484d-8f62-ee44b516a068",
+      "role": "member",
+      "joinedAt": "2026-07-20T10:47:48.763Z"
+    },
+    {
+      "id": "5669cb08-f79d-4c72-8945-9f4ffc94a98e",
+      "communityId": "fbe33fee-3f97-45fc-ba7e-78cd6576f793",
+      "userId": "ff6bd4af-c079-4cdd-aec0-26d07710c209",
+      "role": "member",
+      "joinedAt": "2026-07-20T10:47:48.763Z"
+    }
+  ],
+  "skills": [
+    {
+      "id": "dc433b14-b0e1-4dc7-ad03-388b56f333e5",
+      "name": "robotics"
+    },
+    {
+      "id": "9f2660cb-cf24-4a83-9293-5c6cb026260b",
+      "name": "programming"
+    },
+    {
+      "id": "28abd40b-f543-43ae-bbf5-5b78e002ac7a",
+      "name": "teaching"
+    },
+    {
+      "id": "92a7e605-e159-4e3e-bcc2-a4ea6efbc3d7",
+      "name": "design"
+    },
+    {
+      "id": "9d1f83c8-269b-4f95-95b8-b5e154791a42",
+      "name": "machine learning"
+    },
+    {
+      "id": "f7a70073-ba53-496d-99aa-f0408c1666a5",
+      "name": "electrical"
+    },
+    {
+      "id": "d51c6bf5-e019-4d7d-a933-637aca198b36",
+      "name": "carpentry"
+    },
+    {
+      "id": "ea3c07b6-872d-4b6b-b3d5-b2a4d1ef700b",
+      "name": "first aid"
+    },
+    {
+      "id": "42f176fa-23f6-4fb8-9ceb-d0070119496c",
+      "name": "event management"
+    },
+    {
+      "id": "f325408a-dc18-4602-9167-af5b073b59ea",
+      "name": "fundraising"
+    },
+    {
+      "id": "e4bb28c3-2e71-4ddb-a9f5-21f0696a1cf9",
+      "name": "plumbing"
+    }
+  ],
+  "userSkills": [
+    {
+      "id": "31ab5d30-2f00-4f1a-baf5-ff89b62546fe",
+      "userId": "29f607df-2f6c-47ae-9ed2-6d217fb74f1f",
+      "skillId": "dc433b14-b0e1-4dc7-ad03-388b56f333e5",
+      "level": "expert",
+      "source": "stated"
+    },
+    {
+      "id": "29d64d23-f78e-4c36-88e0-9e34d69fa703",
+      "userId": "29f607df-2f6c-47ae-9ed2-6d217fb74f1f",
+      "skillId": "9f2660cb-cf24-4a83-9293-5c6cb026260b",
+      "level": "expert",
+      "source": "stated"
+    },
+    {
+      "id": "eb6fe08c-c36b-42d1-8b15-6235e902e921",
+      "userId": "29f607df-2f6c-47ae-9ed2-6d217fb74f1f",
+      "skillId": "28abd40b-f543-43ae-bbf5-5b78e002ac7a",
+      "level": "expert",
+      "source": "stated"
+    },
+    {
+      "id": "db5270a9-d674-41a0-b27c-c74f2491f03d",
+      "userId": "cc57fa95-d874-40ab-969e-42dc88e3e371",
+      "skillId": "92a7e605-e159-4e3e-bcc2-a4ea6efbc3d7",
+      "level": "expert",
+      "source": "stated"
+    },
+    {
+      "id": "13202c48-b520-4f4c-b4cd-fe03d7e111d5",
+      "userId": "cc57fa95-d874-40ab-969e-42dc88e3e371",
+      "skillId": "9d1f83c8-269b-4f95-95b8-b5e154791a42",
+      "level": "expert",
+      "source": "stated"
+    },
+    {
+      "id": "842b43ad-b34c-44dc-b132-cfcdc7c1a0ec",
+      "userId": "406ed1af-6c1f-4846-b2f1-46c8387dcb0b",
+      "skillId": "f7a70073-ba53-496d-99aa-f0408c1666a5",
+      "level": "expert",
+      "source": "stated"
+    },
+    {
+      "id": "097d21d0-6939-4ca2-bb8e-5a5bc6b3d71d",
+      "userId": "406ed1af-6c1f-4846-b2f1-46c8387dcb0b",
+      "skillId": "d51c6bf5-e019-4d7d-a933-637aca198b36",
+      "level": "expert",
+      "source": "stated"
+    },
+    {
+      "id": "e980909d-59e8-4a67-93bf-8b377dac4649",
+      "userId": "3868b322-f247-484d-8f62-ee44b516a068",
+      "skillId": "ea3c07b6-872d-4b6b-b3d5-b2a4d1ef700b",
+      "level": "expert",
+      "source": "stated"
+    },
+    {
+      "id": "70e9c6b4-da67-4efb-b7df-6bba15ef18ee",
+      "userId": "3868b322-f247-484d-8f62-ee44b516a068",
+      "skillId": "42f176fa-23f6-4fb8-9ceb-d0070119496c",
+      "level": "expert",
+      "source": "stated"
+    },
+    {
+      "id": "bce0eea9-60a9-436b-9c47-f9191d4c3b8f",
+      "userId": "3868b322-f247-484d-8f62-ee44b516a068",
+      "skillId": "f325408a-dc18-4602-9167-af5b073b59ea",
+      "level": "expert",
+      "source": "stated"
+    },
+    {
+      "id": "98b04844-ff8d-46d3-9e93-4f530ef49c5c",
+      "userId": "ff6bd4af-c079-4cdd-aec0-26d07710c209",
+      "skillId": "e4bb28c3-2e71-4ddb-a9f5-21f0696a1cf9",
+      "level": "expert",
+      "source": "stated"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "6d3c32d7-b4dc-444b-8f69-30cad6cc6eab",
+      "fromType": "person",
+      "fromId": "29f607df-2f6c-47ae-9ed2-6d217fb74f1f",
+      "toType": "skill",
+      "toId": "dc433b14-b0e1-4dc7-ad03-388b56f333e5",
+      "kind": "has_skill",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.561Z"
+    },
+    {
+      "id": "948f89e7-be3b-4494-aa85-ee1792e24c9a",
+      "fromType": "person",
+      "fromId": "29f607df-2f6c-47ae-9ed2-6d217fb74f1f",
+      "toType": "skill",
+      "toId": "9f2660cb-cf24-4a83-9293-5c6cb026260b",
+      "kind": "has_skill",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.561Z"
+    },
+    {
+      "id": "8438a463-a0cf-41de-a9a9-8b38d49337f8",
+      "fromType": "person",
+      "fromId": "29f607df-2f6c-47ae-9ed2-6d217fb74f1f",
+      "toType": "skill",
+      "toId": "28abd40b-f543-43ae-bbf5-5b78e002ac7a",
+      "kind": "has_skill",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.561Z"
+    },
+    {
+      "id": "409f104c-d8de-439e-8716-f9ec7bd05de2",
+      "fromType": "person",
+      "fromId": "cc57fa95-d874-40ab-969e-42dc88e3e371",
+      "toType": "skill",
+      "toId": "92a7e605-e159-4e3e-bcc2-a4ea6efbc3d7",
+      "kind": "has_skill",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.611Z"
+    },
+    {
+      "id": "b38f1cd9-9f70-4bcd-bb67-d959cddca3eb",
+      "fromType": "person",
+      "fromId": "cc57fa95-d874-40ab-969e-42dc88e3e371",
+      "toType": "skill",
+      "toId": "9d1f83c8-269b-4f95-95b8-b5e154791a42",
+      "kind": "has_skill",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.611Z"
+    },
+    {
+      "id": "4f247ca0-1d52-429b-ad17-0460e64546cd",
+      "fromType": "person",
+      "fromId": "406ed1af-6c1f-4846-b2f1-46c8387dcb0b",
+      "toType": "skill",
+      "toId": "f7a70073-ba53-496d-99aa-f0408c1666a5",
+      "kind": "has_skill",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.662Z"
+    },
+    {
+      "id": "a3fe72c7-d024-4553-a3cd-8d930953fe85",
+      "fromType": "person",
+      "fromId": "406ed1af-6c1f-4846-b2f1-46c8387dcb0b",
+      "toType": "skill",
+      "toId": "d51c6bf5-e019-4d7d-a933-637aca198b36",
+      "kind": "has_skill",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.662Z"
+    },
+    {
+      "id": "632a4a02-4eb7-49d2-8e10-e806fcab993a",
+      "fromType": "person",
+      "fromId": "3868b322-f247-484d-8f62-ee44b516a068",
+      "toType": "skill",
+      "toId": "ea3c07b6-872d-4b6b-b3d5-b2a4d1ef700b",
+      "kind": "has_skill",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.712Z"
+    },
+    {
+      "id": "8cb2445d-35e6-4cff-bb89-88f8d099abfd",
+      "fromType": "person",
+      "fromId": "3868b322-f247-484d-8f62-ee44b516a068",
+      "toType": "skill",
+      "toId": "42f176fa-23f6-4fb8-9ceb-d0070119496c",
+      "kind": "has_skill",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.712Z"
+    },
+    {
+      "id": "b0baef9a-b4e3-44a1-a3f9-73efd21888fd",
+      "fromType": "person",
+      "fromId": "3868b322-f247-484d-8f62-ee44b516a068",
+      "toType": "skill",
+      "toId": "f325408a-dc18-4602-9167-af5b073b59ea",
+      "kind": "has_skill",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.712Z"
+    },
+    {
+      "id": "1aea78a4-4f52-48d7-b311-7fe37ed295dd",
+      "fromType": "person",
+      "fromId": "ff6bd4af-c079-4cdd-aec0-26d07710c209",
+      "toType": "skill",
+      "toId": "e4bb28c3-2e71-4ddb-a9f5-21f0696a1cf9",
+      "kind": "has_skill",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.763Z"
+    },
+    {
+      "id": "bcbf0ce9-9718-4cdf-884c-fc4a8b149d27",
+      "fromType": "person",
+      "fromId": "29f607df-2f6c-47ae-9ed2-6d217fb74f1f",
+      "toType": "community",
+      "toId": "fbe33fee-3f97-45fc-ba7e-78cd6576f793",
+      "kind": "member_of",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.763Z"
+    },
+    {
+      "id": "68a65c0e-eb48-4e8e-937e-270c60d04b65",
+      "fromType": "person",
+      "fromId": "cc57fa95-d874-40ab-969e-42dc88e3e371",
+      "toType": "community",
+      "toId": "fbe33fee-3f97-45fc-ba7e-78cd6576f793",
+      "kind": "member_of",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.763Z"
+    },
+    {
+      "id": "5ce11316-b4de-4b2f-a2cd-2ebc01191f0c",
+      "fromType": "person",
+      "fromId": "406ed1af-6c1f-4846-b2f1-46c8387dcb0b",
+      "toType": "community",
+      "toId": "fbe33fee-3f97-45fc-ba7e-78cd6576f793",
+      "kind": "member_of",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.763Z"
+    },
+    {
+      "id": "a1b7cfca-dc90-4ca7-8a58-e14934b2cf93",
+      "fromType": "person",
+      "fromId": "3868b322-f247-484d-8f62-ee44b516a068",
+      "toType": "community",
+      "toId": "fbe33fee-3f97-45fc-ba7e-78cd6576f793",
+      "kind": "member_of",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.763Z"
+    },
+    {
+      "id": "7eeb9b87-28c1-4f68-bf98-26bcad2fdb7a",
+      "fromType": "person",
+      "fromId": "ff6bd4af-c079-4cdd-aec0-26d07710c209",
+      "toType": "community",
+      "toId": "fbe33fee-3f97-45fc-ba7e-78cd6576f793",
+      "kind": "member_of",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.763Z"
+    },
+    {
+      "id": "c8f7bd50-16f0-4c76-bfc1-9c215ea47c1b",
+      "fromType": "person",
+      "fromId": "29f607df-2f6c-47ae-9ed2-6d217fb74f1f",
+      "toType": "person",
+      "toId": "cc57fa95-d874-40ab-969e-42dc88e3e371",
+      "kind": "collaborated",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.763Z"
+    },
+    {
+      "id": "56e67471-6578-42e1-a4cc-1c9d73827b62",
+      "fromType": "person",
+      "fromId": "cc57fa95-d874-40ab-969e-42dc88e3e371",
+      "toType": "person",
+      "toId": "29f607df-2f6c-47ae-9ed2-6d217fb74f1f",
+      "kind": "collaborated",
+      "weight": 1,
+      "createdAt": "2026-07-20T10:47:48.763Z"
+    }
+  ]
+}
