@@ -10,16 +10,37 @@ function h(html) {
 Views.home = function (root) {
   root.innerHTML = `
     <div class="hero">
-      <h1>Every Community Already Has the People It Needs</h1>
+      <span class="eyebrow">AI-Powered Community Intelligence</span>
+      <h1>Every Community Already Has<br/>the People It Needs</h1>
       <p>Describe your problem in plain language. SkillMesh discovers the right people to solve it —
       by reasoning over a living community knowledge graph instead of keyword search.</p>
-      <button class="btn btn-primary" id="cta-search">Try AI Search</button>
-      <button class="btn" id="cta-communities">Browse Communities</button>
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="cta-search">✦ Try AI Search</button>
+        <button class="btn" id="cta-communities">Browse Communities</button>
+      </div>
     </div>
+    <div class="section-title">What makes SkillMesh different</div>
     <div class="grid">
-      <div class="card"><h3>AI Community Search</h3><p class="muted">Search using natural language instead of filters.</p></div>
-      <div class="card"><h3>Hidden Expert Discovery</h3><p class="muted">Find skilled people even if they never listed those skills.</p></div>
-      <div class="card"><h3>Living Knowledge Graph</h3><p class="muted">Every person, skill, and community becomes a connected node.</p></div>
+      <div class="card">
+        <div class="card-icon">🗣️</div>
+        <h3>AI Community Search</h3>
+        <p class="muted">Search using natural language instead of filters — describe the problem, not the profile.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">💡</div>
+        <h3>Hidden Expert Discovery</h3>
+        <p class="muted">Find skilled people even if they never listed those skills anywhere.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🕸️</div>
+        <h3>Living Knowledge Graph</h3>
+        <p class="muted">Every person, skill, and community becomes a connected, continuously evolving node.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🚨</div>
+        <h3>Emergency Response</h3>
+        <p class="muted">Need an electrician right now? SkillMesh detects urgency and ranks availability first.</p>
+      </div>
     </div>
   `;
   root.querySelector('#cta-search').onclick = () => App.navigate('search');
@@ -96,7 +117,7 @@ Views.register = function (root) {
 
 // ---------- Dashboard / Profile ----------
 Views.dashboard = async function (root) {
-  root.innerHTML = `<p class="muted">Loading your profile…</p>`;
+  root.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading your profile…</div>`;
   try {
     const { user } = await Api.me();
     Store.setUser(user);
@@ -117,10 +138,13 @@ function renderProfile(root, profile, editable) {
 
   root.innerHTML = `
     <div class="card">
-      <h3>${profile.name}</h3>
-      <p class="muted">${profile.location || 'No location set'} · availability: ${profile.availability || 'unknown'}</p>
-      <p><strong>Skills:</strong><br/>${skillBadges}</p>
-      <p><strong>Communities:</strong><br/>${communityBadges}</p>
+      <h3><span class="avatar-chip">${(profile.name || '?').charAt(0).toUpperCase()}</span>${profile.name}</h3>
+      <p class="muted">📍 ${profile.location || 'No location set'} · ${profile.availability === 'available' ? '🟢' : '🟠'} ${profile.availability || 'unknown'}</p>
+      <hr class="divider" />
+      <p><strong>Skills</strong></p>
+      <p>${skillBadges}</p>
+      <p><strong>Communities</strong></p>
+      <p>${communityBadges}</p>
     </div>
     ${editable ? `
     <div class="card">
@@ -184,7 +208,7 @@ Views.communities = async function (root) {
 
   async function loadList(q) {
     const list = root.querySelector('#list');
-    list.innerHTML = `<p class="muted">Loading…</p>`;
+    list.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading communities…</div>`;
     const { communities } = await Api.listCommunities(q);
     if (!communities.length) {
       list.innerHTML = `<p class="muted">No communities found.</p>`;
@@ -230,7 +254,7 @@ Views.communities = async function (root) {
 };
 
 Views.community = async function (root, params) {
-  root.innerHTML = `<p class="muted">Loading…</p>`;
+  root.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading…</div>`;
   try {
     const { community, members } = await Api.getCommunity(params.id);
     root.innerHTML = `
@@ -246,7 +270,7 @@ Views.community = async function (root, params) {
       </div>
       <div class="card">
         <h3>Knowledge graph</h3>
-        <div id="graph-container"><p class="muted">Loading graph…</p></div>
+        <div id="graph-container"><div class="loading-line"><span class="spinner"></span> Loading graph…</div></div>
       </div>
     `;
     if (Store.isLoggedIn()) {
@@ -276,7 +300,7 @@ Views.search = function (root, params) {
     const query = root.querySelector('#query').value.trim();
     const results = root.querySelector('#results');
     if (!query) return;
-    results.innerHTML = `<p class="muted">Thinking…</p>`;
+    results.innerHTML = `<div class="loading-line"><span class="spinner"></span> Reasoning over the community graph…</div>`;
     try {
       const data = await Api.search({ query, communityId: params && params.communityId });
       renderSearchResults(results, data);
@@ -298,13 +322,18 @@ function renderSearchResults(container, data) {
     </div>
     <div class="card">
       <h3>${results.length} match${results.length === 1 ? '' : 'es'}</h3>
-      ${results.length === 0 ? '<p class="muted">No matches yet — try adding skills to some profiles, or rephrase your request.</p>' : ''}
-      ${results.map((r) => `
+      ${results.length === 0 ? `
+        <div class="info-box">No matches yet — try adding skills to a few profiles first, or rephrase your request. Detected terms can also be loose keywords if nothing in the skill dictionary matched.</div>
+      ` : ''}
+      ${results.map((r, i) => `
         <div class="result-row">
-          <div>
-            <strong>${r.user.name}</strong>
-            <p class="muted" style="margin:4px 0;">${r.user.location || 'Location unknown'} · ${r.user.availability}</p>
-            <div>${r.skills.map((s) => `<span class="badge ${r.matchedSkills.includes(s) ? 'badge-matched' : 'badge-skill'}">${s}</span>`).join(' ')}</div>
+          <div class="result-main">
+            <div class="result-rank">${i + 1}</div>
+            <div>
+              <strong>${r.user.name}</strong>
+              <p class="muted" style="margin:4px 0;">📍 ${r.user.location || 'Location unknown'} · ${r.user.availability === 'available' ? '🟢' : '🟠'} ${r.user.availability}</p>
+              <div>${r.skills.map((s) => `<span class="badge ${r.matchedSkills.includes(s) ? 'badge-matched' : 'badge-skill'}">${s}</span>`).join(' ')}</div>
+            </div>
           </div>
           <div class="score-pill">score ${r.score}</div>
         </div>

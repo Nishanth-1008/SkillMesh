@@ -32,10 +32,15 @@ const App = {
     ];
     if (loggedIn) items.push(['dashboard', 'My Profile']);
 
+    const user = Store.getUser();
+    const userChip = loggedIn && user
+      ? `<span class="avatar-chip">${(user.name || '?').charAt(0).toUpperCase()}</span>`
+      : '';
+
     nav.innerHTML = items
       .map(([r, label]) => `<button data-route="${r}" class="${route === r ? 'active' : ''}">${label}</button>`)
       .join('') + (loggedIn
-        ? `<button class="btn-danger" id="logout">Log out</button>`
+        ? `${userChip}<button class="btn-danger" id="logout">Log out</button>`
         : `<button class="btn-primary" data-route="login">Log in</button>`);
 
     nav.querySelectorAll('[data-route]').forEach((btn) => {
@@ -59,8 +64,16 @@ const App = {
     await this.routes[route](root, params);
   },
 
-  init() {
+  async init() {
     window.addEventListener('hashchange', () => this.render());
+    if (Store.isLoggedIn() && !Store.getUser()) {
+      try {
+        const { user } = await Api.me();
+        Store.setUser(user);
+      } catch {
+        Store.clearToken();
+      }
+    }
     this.render();
   },
 };

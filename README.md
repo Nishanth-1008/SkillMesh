@@ -1,6 +1,6 @@
 # SkillMesh — Build Progress
 
-**Last updated:** Monday, July 20, 2026, 10:34 UTC
+**Last updated:** Monday, July 20, 2026, 11:28 UTC (UI polish pass — richer visual design: gradient hero, glassmorphism cards, spinner loading states, ranked search results, nav avatar chip)
 
 ## What was built
 
