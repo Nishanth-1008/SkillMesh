@@ -1,21 +1,16 @@
 const Views = {};
 
-function h(html) {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return div;
-}
-
 // ---------- Home ----------
 Views.home = function (root) {
   root.innerHTML = `
     <div class="hero">
-      <span class="eyebrow">AI-Powered Community Intelligence</span>
+      <span class="eyebrow">AI-Powered Community Intelligence · Phase 2</span>
       <h1>Every Community Already Has<br/>the People It Needs</h1>
-      <p>Describe your problem in plain language. SkillMesh discovers the right people to solve it —
-      by reasoning over a living community knowledge graph instead of keyword search.</p>
+      <p>Describe your problem in plain language. SkillMesh discovers the right people,
+      builds balanced teams, and surfaces opportunities across your community.</p>
       <div class="hero-actions">
         <button class="btn btn-primary" id="cta-search">✦ Try AI Search</button>
+        <button class="btn" id="cta-teams">Build a Team</button>
         <button class="btn" id="cta-communities">Browse Communities</button>
       </div>
     </div>
@@ -27,23 +22,24 @@ Views.home = function (root) {
         <p class="muted">Search using natural language instead of filters — describe the problem, not the profile.</p>
       </div>
       <div class="card">
-        <div class="card-icon">💡</div>
-        <h3>Hidden Expert Discovery</h3>
-        <p class="muted">Find skilled people even if they never listed those skills anywhere.</p>
+        <div class="card-icon">👥</div>
+        <h3>AI Team Builder</h3>
+        <p class="muted">Describe a project goal. SkillMesh balances skills, availability, and prior collaborations.</p>
       </div>
       <div class="card">
-        <div class="card-icon">🕸️</div>
-        <h3>Living Knowledge Graph</h3>
-        <p class="muted">Every person, skill, and community becomes a connected, continuously evolving node.</p>
+        <div class="card-icon">⭐</div>
+        <h3>Trust &amp; Reputation</h3>
+        <p class="muted">Endorsements, badges, and contribution history influence every recommendation.</p>
       </div>
       <div class="card">
-        <div class="card-icon">🚨</div>
-        <h3>Emergency Response</h3>
-        <p class="muted">Need an electrician right now? SkillMesh detects urgency and ranks availability first.</p>
+        <div class="card-icon">🎯</div>
+        <h3>Opportunity Matching</h3>
+        <p class="muted">Volunteer, mentorship, and event openings ranked by your skills and location.</p>
       </div>
     </div>
   `;
   root.querySelector('#cta-search').onclick = () => App.navigate('search');
+  root.querySelector('#cta-teams').onclick = () => App.navigate('teams');
   root.querySelector('#cta-communities').onclick = () => App.navigate('communities');
 };
 
@@ -59,7 +55,7 @@ Views.login = function (root) {
       <input class="input" id="password" type="password" placeholder="password123" />
       <button class="btn btn-primary" id="submit" style="width:100%;">Log in</button>
       <p class="muted" style="margin-top:14px;">No account? <a href="#" id="go-register" style="color:var(--cyan);">Register</a></p>
-      <p class="muted">Demo accounts (seeded): raj@example.com / password123, sneha@example.com, arjun@example.com, priya@example.com, kabir@example.com — all use password123.</p>
+      <p class="muted">Demo: raj@example.com / password123 (also sneha, arjun, priya, kabir @example.com)</p>
     </div>
   `;
   root.querySelector('#go-register').onclick = (e) => { e.preventDefault(); App.navigate('register'); };
@@ -135,31 +131,60 @@ function renderProfile(root, profile, editable) {
   const communityBadges = profile.communities.length
     ? profile.communities.map((c) => `<span class="badge">${c.name} <span class="muted">(${c.role})</span></span>`).join(' ')
     : `<span class="muted">Not a member of any community yet.</span>`;
+  const trustScore = profile.trust ? profile.trust.score : 0;
+  const badges = (profile.badges || []).map((b) => `<span class="badge badge-matched">${b.badge}</span>`).join(' ') || '<span class="muted">No badges yet</span>';
+  const endorsements = (profile.endorsements || []).length
+    ? profile.endorsements.map((e) => `<li><strong>${e.skill}</strong> — ${e.from ? e.from.name : 'someone'}${e.note ? `: "${e.note}"` : ''}</li>`).join('')
+    : '<li class="muted">No endorsements yet</li>';
 
   root.innerHTML = `
     <div class="card">
       <h3><span class="avatar-chip">${(profile.name || '?').charAt(0).toUpperCase()}</span>${profile.name}</h3>
       <p class="muted">📍 ${profile.location || 'No location set'} · ${profile.availability === 'available' ? '🟢' : '🟠'} ${profile.availability || 'unknown'}</p>
+      <div class="trust-bar">
+        <div class="trust-label">Trust score <strong>${trustScore}</strong>/100</div>
+        <div class="trust-track"><div class="trust-fill" style="width:${trustScore}%"></div></div>
+      </div>
       <hr class="divider" />
       <p><strong>Skills</strong></p>
       <p>${skillBadges}</p>
       <p><strong>Communities</strong></p>
       <p>${communityBadges}</p>
+      <p><strong>Badges</strong></p>
+      <p>${badges}</p>
+      <p><strong>Endorsements</strong></p>
+      <ul class="endorse-list">${endorsements}</ul>
     </div>
     ${editable ? `
     <div class="card">
       <h3>Add a skill</h3>
       <div id="msg"></div>
-      <div style="display:flex;gap:10px;">
-        <input class="input" id="skill-name" placeholder="e.g. robotics, first aid, design" style="flex:2;" />
-        <select class="input" id="skill-level" style="flex:1;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <input class="input" id="skill-name" placeholder="e.g. robotics, first aid, design" style="flex:2;min-width:160px;" />
+        <select class="input" id="skill-level" style="flex:1;min-width:120px;">
           <option value="beginner">beginner</option>
           <option value="intermediate" selected>intermediate</option>
           <option value="expert">expert</option>
         </select>
         <button class="btn btn-primary" id="add-skill">Add</button>
       </div>
-    </div>` : ''}
+    </div>
+    <div class="card">
+      <h3>Endorse someone</h3>
+      <div id="endorse-msg"></div>
+      <input class="input" id="endorse-user" placeholder="User ID (from a profile or search result)" />
+      <input class="input" id="endorse-skill" placeholder="Skill to endorse" />
+      <input class="input" id="endorse-note" placeholder="Optional note" />
+      <button class="btn btn-primary" id="endorse-btn">Endorse</button>
+    </div>` : `
+    ${Store.isLoggedIn() && Store.getUser() && Store.getUser().id !== profile.id ? `
+    <div class="card">
+      <h3>Endorse ${profile.name}</h3>
+      <div id="endorse-msg"></div>
+      <input class="input" id="endorse-skill" placeholder="Skill to endorse" />
+      <input class="input" id="endorse-note" placeholder="Optional note" />
+      <button class="btn btn-primary" id="endorse-btn">Endorse</button>
+    </div>` : ''}`}
   `;
 
   if (editable) {
@@ -182,8 +207,43 @@ function renderProfile(root, profile, editable) {
         App.navigate('dashboard');
       };
     });
+    root.querySelector('#endorse-btn').onclick = async () => {
+      const toUserId = root.querySelector('#endorse-user').value.trim();
+      const skill = root.querySelector('#endorse-skill').value.trim();
+      const note = root.querySelector('#endorse-note').value.trim();
+      const msg = root.querySelector('#endorse-msg');
+      try {
+        await Api.endorse({ toUserId, skill, note });
+        msg.innerHTML = `<div class="info-box">Endorsement sent.</div>`;
+      } catch (e) {
+        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+      }
+    };
+  } else if (root.querySelector('#endorse-btn')) {
+    root.querySelector('#endorse-btn').onclick = async () => {
+      const skill = root.querySelector('#endorse-skill').value.trim();
+      const note = root.querySelector('#endorse-note').value.trim();
+      const msg = root.querySelector('#endorse-msg');
+      try {
+        await Api.endorse({ toUserId: profile.id, skill, note });
+        msg.innerHTML = `<div class="info-box">Endorsement sent.</div>`;
+        App.navigate('profile', { id: profile.id });
+      } catch (e) {
+        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+      }
+    };
   }
 }
+
+Views.profile = async function (root, params) {
+  root.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading…</div>`;
+  try {
+    const { profile } = await Api.getProfile(params.id);
+    renderProfile(root, profile, false);
+  } catch (e) {
+    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+  }
+};
 
 // ---------- Communities ----------
 Views.communities = async function (root) {
@@ -249,7 +309,6 @@ Views.communities = async function (root) {
       }
     };
   }
-
   loadList();
 };
 
@@ -262,11 +321,15 @@ Views.community = async function (root, params) {
         <h3>${community.name}</h3>
         <p class="muted">${community.description || ''}</p>
         <p class="muted">${community.memberCount} members</p>
-        ${Store.isLoggedIn() ? `<button class="btn btn-primary" id="join">Join</button> <button class="btn" id="search-here">AI search within this community</button>` : ''}
+        ${Store.isLoggedIn() ? `
+          <button class="btn btn-primary" id="join">Join</button>
+          <button class="btn" id="search-here">AI search here</button>
+          <button class="btn" id="team-here">Build team here</button>
+        ` : ''}
       </div>
       <div class="card">
         <h3>Members</h3>
-        ${members.map((m) => `<span class="badge">${m.name} <span class="muted">(${m.role})</span></span>`).join(' ') || '<span class="muted">No members yet.</span>'}
+        ${members.map((m) => `<span class="badge" style="cursor:pointer;" data-profile="${m.id}">${m.name} <span class="muted">(${m.role})</span></span>`).join(' ') || '<span class="muted">No members yet.</span>'}
       </div>
       <div class="card">
         <h3>Knowledge graph</h3>
@@ -276,7 +339,11 @@ Views.community = async function (root, params) {
     if (Store.isLoggedIn()) {
       root.querySelector('#join').onclick = async () => { await Api.joinCommunity(community.id); App.navigate('community', { id: community.id }); };
       root.querySelector('#search-here').onclick = () => App.navigate('search', { communityId: community.id });
+      root.querySelector('#team-here').onclick = () => App.navigate('teams', { communityId: community.id });
     }
+    root.querySelectorAll('[data-profile]').forEach((el) => {
+      el.onclick = () => App.navigate('profile', { id: el.getAttribute('data-profile') });
+    });
     const { nodes, edges } = await Api.graph(community.id);
     GraphView.render(root.querySelector('#graph-container'), { nodes, edges });
   } catch (e) {
@@ -289,8 +356,8 @@ Views.search = function (root, params) {
   root.innerHTML = `
     <div class="card">
       <h3>Describe what you need</h3>
-      <p class="muted">Natural language in, ranked people out. Try: "I need someone to teach robotics", "emergency electrician needed now", or "build me a hackathon team".</p>
-      ${!Store.isLoggedIn() ? '<div class="error-box">Log in to run a search (search is scoped to your account).</div>' : ''}
+      <p class="muted">Try: "I need someone to teach robotics", "emergency electrician needed now", or "build me a hackathon team".</p>
+      ${!Store.isLoggedIn() ? '<div class="error-box">Log in to run a search.</div>' : ''}
       <textarea class="input" id="query" rows="2" placeholder="I need someone to teach robotics"></textarea>
       <button class="btn btn-primary" id="run" ${!Store.isLoggedIn() ? 'disabled' : ''}>Search</button>
     </div>
@@ -311,33 +378,651 @@ Views.search = function (root, params) {
 };
 
 function renderSearchResults(container, data) {
-  const { understanding, results } = data;
+  const { understanding, results, mode, team, hiddenExperts } = data;
   const skillBadges = understanding.skills.map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ') || '<span class="muted">none detected</span>';
+
+  let teamBlock = '';
+  if (mode === 'team_builder' && team) {
+    teamBlock = `
+      <div class="card">
+        <h3>AI Team · ${team.coverage}% skill coverage · success prediction ${team.successPrediction}%</h3>
+        <p class="muted">Needed: ${team.neededSkills.join(', ') || '—'}
+          ${team.uncoveredSkills.length ? ` · Gaps: ${team.uncoveredSkills.join(', ')}` : ''}</p>
+        <p class="muted">Avg trust ${team.rationale.avgTrust} · Available ${team.rationale.availableRatio}% · Prior collabs ${team.rationale.priorCollaborations}</p>
+      </div>`;
+  }
+
+  let hiddenBlock = '';
+  if (hiddenExperts && hiddenExperts.length) {
+    hiddenBlock = `
+      <div class="card">
+        <h3>Hidden experts</h3>
+        ${hiddenExperts.map((h) => `
+          <div class="result-row">
+            <div class="result-main">
+              <div>
+                <strong style="cursor:pointer;" data-profile="${h.user.id}">${h.user.name}</strong>
+                <p class="muted" style="margin:4px 0;">${h.reason}</p>
+                <div>${(h.inferredHits || []).map((s) => `<span class="badge badge-matched">${s}</span>`).join(' ')}</div>
+              </div>
+            </div>
+            <div class="score-pill">trust ${h.trustScore}</div>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
   container.innerHTML = `
     <div class="card">
       <p class="muted">Intent: <strong>${understanding.intent.replace('_', ' ')}</strong>
         ${understanding.urgent ? '<span class="badge badge-urgent">urgent</span>' : ''}
+        ${mode ? `<span class="badge">${mode}</span>` : ''}
       </p>
       <p class="muted">Detected skills: ${skillBadges}</p>
     </div>
+    ${teamBlock}
     <div class="card">
       <h3>${results.length} match${results.length === 1 ? '' : 'es'}</h3>
-      ${results.length === 0 ? `
-        <div class="info-box">No matches yet — try adding skills to a few profiles first, or rephrase your request. Detected terms can also be loose keywords if nothing in the skill dictionary matched.</div>
-      ` : ''}
+      ${results.length === 0 ? `<div class="info-box">No matches yet — try adding skills to profiles, or rephrase.</div>` : ''}
       ${results.map((r, i) => `
         <div class="result-row">
           <div class="result-main">
             <div class="result-rank">${i + 1}</div>
             <div>
-              <strong>${r.user.name}</strong>
-              <p class="muted" style="margin:4px 0;">📍 ${r.user.location || 'Location unknown'} · ${r.user.availability === 'available' ? '🟢' : '🟠'} ${r.user.availability}</p>
-              <div>${r.skills.map((s) => `<span class="badge ${r.matchedSkills.includes(s) ? 'badge-matched' : 'badge-skill'}">${s}</span>`).join(' ')}</div>
+              <strong style="cursor:pointer;" data-profile="${r.user.id}">${r.user.name}</strong>
+              <p class="muted" style="margin:4px 0;">📍 ${r.user.location || 'Location unknown'} · ${r.user.availability === 'available' ? '🟢' : '🟠'} ${r.user.availability}${r.trustScore != null ? ` · trust ${r.trustScore}` : ''}</p>
+              <div>${r.skills.map((s) => `<span class="badge ${(r.matchedSkills || []).includes(s) ? 'badge-matched' : 'badge-skill'}">${s}</span>`).join(' ')}</div>
             </div>
           </div>
           <div class="score-pill">score ${r.score}</div>
         </div>
       `).join('')}
     </div>
+    ${hiddenBlock}
   `;
+  container.querySelectorAll('[data-profile]').forEach((el) => {
+    el.onclick = () => App.navigate('profile', { id: el.getAttribute('data-profile') });
+  });
 }
+
+// ---------- AI Team Builder ----------
+Views.teams = function (root, params) {
+  root.innerHTML = `
+    <div class="card">
+      <h3>AI Team Builder</h3>
+      <p class="muted">Describe a project goal. SkillMesh balances skills, availability, trust, and prior collaborations.</p>
+      ${!Store.isLoggedIn() ? '<div class="error-box">Log in to build and optionally create a project from the suggestion.</div>' : ''}
+      <textarea class="input" id="goal" rows="2" placeholder="Build me a hackathon team for a civic tech app"></textarea>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <label class="muted"><input type="checkbox" id="create-project" ${Store.isLoggedIn() ? '' : 'disabled'} /> Also create project &amp; invite the team</label>
+        <button class="btn btn-primary" id="run">Build team</button>
+      </div>
+    </div>
+    <div id="results"></div>
+  `;
+  root.querySelector('#run').onclick = async () => {
+    const goal = root.querySelector('#goal').value.trim();
+    const createProject = root.querySelector('#create-project').checked;
+    const results = root.querySelector('#results');
+    if (!goal) return;
+    results.innerHTML = `<div class="loading-line"><span class="spinner"></span> Assembling a balanced team…</div>`;
+    try {
+      const data = await Api.buildTeam({
+        goal,
+        communityId: params && params.communityId,
+        size: 4,
+        createProject,
+      });
+      results.innerHTML = `
+        <div class="card">
+          <h3>Suggested team · coverage ${data.coverage}% · success ${data.successPrediction}%</h3>
+          <p class="muted">Skills needed: ${(data.neededSkills || []).join(', ')}
+            ${data.uncoveredSkills.length ? ` · Gaps: ${data.uncoveredSkills.join(', ')}` : ''}</p>
+          ${data.project ? `<p class="info-box">Project created: <a href="#project?id=${data.project.id}" style="color:var(--cyan);">${data.project.title}</a> — invites sent.</p>` : ''}
+          ${data.team.map((m, i) => `
+            <div class="result-row">
+              <div class="result-main">
+                <div class="result-rank">${i + 1}</div>
+                <div>
+                  <strong style="cursor:pointer;" data-profile="${m.user.id}">${m.user.name}</strong>
+                  <p class="muted" style="margin:4px 0;">${m.user.availability} · trust ${m.trustScore} · covers ${(m.covers || []).join(', ') || '—'}</p>
+                  <div>${m.skills.map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ')}</div>
+                </div>
+              </div>
+              <div class="score-pill">${m.score}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      results.querySelectorAll('[data-profile]').forEach((el) => {
+        el.onclick = () => App.navigate('profile', { id: el.getAttribute('data-profile') });
+      });
+    } catch (e) {
+      results.innerHTML = `<div class="error-box">${e.message}</div>`;
+    }
+  };
+};
+
+// ---------- Projects ----------
+Views.projects = async function (root) {
+  root.innerHTML = `
+    <div class="card">
+      <h3>Collaborative projects</h3>
+      <p class="muted">Create projects, invite teammates, manage join requests.</p>
+    </div>
+    ${Store.isLoggedIn() ? `
+    <div class="card">
+      <h3>New project</h3>
+      <div id="create-msg"></div>
+      <input class="input" id="title" placeholder="Project title" />
+      <textarea class="input" id="desc" rows="2" placeholder="Description / goal"></textarea>
+      <input class="input" id="timeline" placeholder="Timeline (optional), e.g. 2026-08-15 to 2026-08-17" />
+      <button class="btn btn-primary" id="create">Create</button>
+    </div>` : '<div class="error-box">Log in to create projects.</div>'}
+    <div id="list" class="grid"><div class="loading-line"><span class="spinner"></span> Loading…</div></div>
+  `;
+  if (Store.isLoggedIn()) {
+    root.querySelector('#create').onclick = async () => {
+      const title = root.querySelector('#title').value.trim();
+      const description = root.querySelector('#desc').value.trim();
+      const timeline = root.querySelector('#timeline').value.trim();
+      const msg = root.querySelector('#create-msg');
+      if (!title) return;
+      try {
+        const { project } = await Api.createProject({ title, description, goal: description, timeline: timeline || undefined });
+        App.navigate('project', { id: project.id });
+      } catch (e) {
+        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+      }
+    };
+  }
+  try {
+    const { projects } = await Api.listProjects();
+    const list = root.querySelector('#list');
+    if (!projects.length) {
+      list.innerHTML = `<p class="muted">No projects yet.</p>`;
+      return;
+    }
+    list.innerHTML = projects.map((p) => `
+      <div class="card">
+        <h3>${p.title}</h3>
+        <p class="muted">${p.description || p.goal || ''}</p>
+        <p class="muted">${p.memberCount} joined · ${p.status}${p.timeline ? ` · ${p.timeline}` : ''}</p>
+        <button class="btn btn-primary" data-id="${p.id}">Open</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('[data-id]').forEach((btn) => {
+      btn.onclick = () => App.navigate('project', { id: btn.getAttribute('data-id') });
+    });
+  } catch (e) {
+    root.querySelector('#list').innerHTML = `<div class="error-box">${e.message}</div>`;
+  }
+};
+
+Views.project = async function (root, params) {
+  root.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading project…</div>`;
+  try {
+    const { project } = await Api.getProject(params.id);
+    const me = Store.getUser();
+    const myMembership = me && project.members.find((m) => m.userId === me.id);
+    const isOwner = me && project.ownerId === me.id;
+
+    let discussionHtml = '';
+    if (myMembership && myMembership.status === 'joined') {
+      try {
+        const { messages } = await Api.projectMessages(project.id);
+        discussionHtml = messages.map((m) => `
+          <div class="msg-row ${m.announcement ? 'announcement' : ''}">
+            <strong>${m.from ? m.from.name : '?'}</strong>
+            ${m.announcement ? '<span class="badge badge-urgent">announcement</span>' : ''}
+            <p>${m.body}</p>
+            <p class="muted" style="font-size:12px;">${new Date(m.createdAt).toLocaleString()}</p>
+          </div>
+        `).join('') || '<p class="muted">No messages yet.</p>';
+      } catch {
+        discussionHtml = '<p class="muted">Could not load discussion.</p>';
+      }
+    }
+
+    root.innerHTML = `
+      <div class="card">
+        <h3>${project.title}</h3>
+        <p class="muted">${project.description || ''}</p>
+        <p class="muted">Goal: ${project.goal || '—'} · Status: ${project.status}${project.timeline ? ` · ${project.timeline}` : ''}</p>
+        ${myMembership && myMembership.status === 'invited' ? `
+          <button class="btn btn-primary" id="accept">Accept invite</button>
+          <button class="btn" id="decline">Decline</button>
+        ` : ''}
+        ${Store.isLoggedIn() && (!myMembership || myMembership.status === 'declined') ? `
+          <button class="btn btn-primary" id="request">Request to join</button>
+        ` : ''}
+        ${myMembership && myMembership.status === 'requested' ? `<span class="badge">Join request pending</span>` : ''}
+      </div>
+      <div class="card">
+        <h3>Members</h3>
+        ${project.members.map((m) => `
+          <span class="badge" style="cursor:pointer;" data-profile="${m.userId}">${m.name} <span class="muted">(${m.role} · ${m.status})</span></span>
+          ${isOwner && m.status === 'requested' ? `
+            <button class="btn" data-approve="${m.userId}">Approve</button>
+            <button class="btn" data-reject="${m.userId}">Reject</button>
+          ` : ''}
+        `).join(' ')}
+      </div>
+      ${isOwner ? `
+      <div class="card">
+        <h3>Invite someone</h3>
+        <div id="invite-msg"></div>
+        <input class="input" id="invite-id" placeholder="User ID" />
+        <button class="btn btn-primary" id="invite-btn">Send invite</button>
+      </div>` : ''}
+      ${myMembership && myMembership.status === 'joined' ? `
+      <div class="card">
+        <h3>Team discussion</h3>
+        <div id="discussion">${discussionHtml}</div>
+        <textarea class="input" id="msg-body" rows="2" placeholder="Write a message…"></textarea>
+        <label class="muted"><input type="checkbox" id="announce" ${isOwner ? '' : 'disabled'} /> Post as announcement</label>
+        <button class="btn btn-primary" id="send-msg">Send</button>
+      </div>` : ''}
+    `;
+
+    root.querySelectorAll('[data-profile]').forEach((el) => {
+      el.onclick = () => App.navigate('profile', { id: el.getAttribute('data-profile') });
+    });
+    if (root.querySelector('#accept')) {
+      root.querySelector('#accept').onclick = async () => { await Api.respondInvite(project.id, true); App.navigate('project', { id: project.id }); };
+      root.querySelector('#decline').onclick = async () => { await Api.respondInvite(project.id, false); App.navigate('project', { id: project.id }); };
+    }
+    if (root.querySelector('#request')) {
+      root.querySelector('#request').onclick = async () => { await Api.requestJoinProject(project.id); App.navigate('project', { id: project.id }); };
+    }
+    root.querySelectorAll('[data-approve]').forEach((btn) => {
+      btn.onclick = async () => { await Api.approveJoin(project.id, { userId: btn.getAttribute('data-approve'), approve: true }); App.navigate('project', { id: project.id }); };
+    });
+    root.querySelectorAll('[data-reject]').forEach((btn) => {
+      btn.onclick = async () => { await Api.approveJoin(project.id, { userId: btn.getAttribute('data-reject'), approve: false }); App.navigate('project', { id: project.id }); };
+    });
+    if (root.querySelector('#invite-btn')) {
+      root.querySelector('#invite-btn').onclick = async () => {
+        const userId = root.querySelector('#invite-id').value.trim();
+        const msg = root.querySelector('#invite-msg');
+        try {
+          await Api.inviteToProject(project.id, { userId });
+          msg.innerHTML = `<div class="info-box">Invite sent.</div>`;
+        } catch (e) {
+          msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+        }
+      };
+    }
+    if (root.querySelector('#send-msg')) {
+      root.querySelector('#send-msg').onclick = async () => {
+        const body = root.querySelector('#msg-body').value.trim();
+        const announcement = root.querySelector('#announce').checked;
+        if (!body) return;
+        await Api.sendMessage({ projectId: project.id, body, announcement });
+        App.navigate('project', { id: project.id });
+      };
+    }
+  } catch (e) {
+    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+  }
+};
+
+// ---------- Recommendations ----------
+Views.recommendations = async function (root) {
+  root.innerHTML = `
+    <div class="card">
+      <h3>Smart recommendations</h3>
+      <p class="muted">Mentors, volunteers, experts, similar people, and nearby contributors.</p>
+      ${!Store.isLoggedIn() ? '<div class="error-box">Log in for personalized recommendations.</div>' : ''}
+    </div>
+    <div id="recs"><div class="loading-line"><span class="spinner"></span> Loading…</div></div>
+  `;
+  if (!Store.isLoggedIn()) return;
+  try {
+    const data = await Api.recommendations();
+    const sections = [
+      ['Mentors', data.mentors],
+      ['Volunteers', data.volunteers],
+      ['Experts', data.experts],
+      ['Similar people', data.similar],
+      ['Nearby', data.nearby],
+    ];
+    root.querySelector('#recs').innerHTML = sections.map(([title, items]) => `
+      <div class="card">
+        <h3>${title}</h3>
+        ${!(items && items.length) ? '<p class="muted">None found yet.</p>' : items.map((r) => `
+          <div class="result-row">
+            <div class="result-main">
+              <div>
+                <strong style="cursor:pointer;" data-profile="${r.user.id}">${r.user.name}</strong>
+                <p class="muted" style="margin:4px 0;">📍 ${r.user.location || '—'} · trust ${r.trustScore}</p>
+                <div>${(r.skills || r.matchedSkills || r.teachable || []).slice(0, 6).map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ')}</div>
+              </div>
+            </div>
+            <div class="score-pill">${Math.round(r.score)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+    root.querySelectorAll('[data-profile]').forEach((el) => {
+      el.onclick = () => App.navigate('profile', { id: el.getAttribute('data-profile') });
+    });
+  } catch (e) {
+    root.querySelector('#recs').innerHTML = `<div class="error-box">${e.message}</div>`;
+  }
+};
+
+// ---------- Opportunities ----------
+Views.opportunities = async function (root) {
+  root.innerHTML = `
+    <div class="card">
+      <h3>Opportunities</h3>
+      <p class="muted">Volunteer, mentorship, events, and organization requests.</p>
+      <div style="display:flex;gap:10px;">
+        <select class="input" id="type-filter" style="flex:1;">
+          <option value="">All types</option>
+          <option value="volunteer">Volunteer</option>
+          <option value="mentorship">Mentorship</option>
+          <option value="event">Event</option>
+          <option value="initiative">Initiative</option>
+          <option value="project">Project</option>
+          <option value="organization_request">Organization request</option>
+        </select>
+        <button class="btn" id="refresh">Filter</button>
+      </div>
+    </div>
+    ${Store.isLoggedIn() ? `
+    <div class="card">
+      <h3>Post an opportunity</h3>
+      <div id="create-msg"></div>
+      <select class="input" id="new-type">
+        <option value="volunteer">Volunteer</option>
+        <option value="mentorship">Mentorship</option>
+        <option value="event">Event</option>
+        <option value="initiative">Initiative</option>
+        <option value="project">Project</option>
+      </select>
+      <input class="input" id="new-title" placeholder="Title" />
+      <textarea class="input" id="new-desc" rows="2" placeholder="Description (skills are auto-extracted)"></textarea>
+      <button class="btn btn-primary" id="create">Post</button>
+    </div>` : ''}
+    <div id="list" class="grid"><div class="loading-line"><span class="spinner"></span> Loading…</div></div>
+  `;
+
+  async function load(type) {
+    const list = root.querySelector('#list');
+    list.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading…</div>`;
+    const { opportunities } = await Api.listOpportunities(type ? { type } : {});
+    if (!opportunities.length) {
+      list.innerHTML = `<p class="muted">No open opportunities.</p>`;
+      return;
+    }
+    list.innerHTML = opportunities.map((o) => `
+      <div class="card">
+        <span class="badge">${o.type}</span>
+        <h3>${o.title}</h3>
+        <p class="muted">${o.description || ''}</p>
+        <div>${(o.skillsNeeded || []).map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ')}</div>
+        <p class="muted">${o.applicantCount || 0} applicants${o.matchCount ? ` · ${o.matchCount} skill match` : ''}</p>
+        <button class="btn" data-view="${o.id}">View</button>
+        ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-apply="${o.id}">Apply</button>` : ''}
+      </div>
+    `).join('');
+    list.querySelectorAll('[data-view]').forEach((btn) => {
+      btn.onclick = () => App.navigate('opportunity', { id: btn.getAttribute('data-view') });
+    });
+    list.querySelectorAll('[data-apply]').forEach((btn) => {
+      btn.onclick = async () => {
+        await Api.applyOpportunity(btn.getAttribute('data-apply'), 'Happy to help!');
+        App.navigate('opportunity', { id: btn.getAttribute('data-apply') });
+      };
+    });
+  }
+
+  root.querySelector('#refresh').onclick = () => load(root.querySelector('#type-filter').value);
+  if (Store.isLoggedIn()) {
+    root.querySelector('#create').onclick = async () => {
+      const type = root.querySelector('#new-type').value;
+      const title = root.querySelector('#new-title').value.trim();
+      const description = root.querySelector('#new-desc').value.trim();
+      const msg = root.querySelector('#create-msg');
+      if (!title) return;
+      try {
+        const { opportunity } = await Api.createOpportunity({ type, title, description });
+        App.navigate('opportunity', { id: opportunity.id });
+      } catch (e) {
+        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+      }
+    };
+  }
+  load();
+};
+
+Views.opportunity = async function (root, params) {
+  root.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading…</div>`;
+  try {
+    const { opportunity, applications } = await Api.getOpportunity(params.id);
+    root.innerHTML = `
+      <div class="card">
+        <span class="badge">${opportunity.type}</span>
+        <h3>${opportunity.title}</h3>
+        <p class="muted">${opportunity.description || ''}</p>
+        <p class="muted">By ${opportunity.creator ? opportunity.creator.name : '—'} · ${opportunity.status}</p>
+        <div>${(opportunity.skillsNeeded || []).map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ')}</div>
+        ${Store.isLoggedIn() && opportunity.status === 'open' ? `<button class="btn btn-primary" id="apply" style="margin-top:12px;">Apply</button>` : ''}
+      </div>
+      <div class="card">
+        <h3>Applicants (${applications.length})</h3>
+        ${applications.map((a) => `
+          <div class="result-row">
+            <div class="result-main">
+              <div>
+                <strong>${a.user ? a.user.name : '?'}</strong>
+                <p class="muted">${a.status} · trust ${a.trustScore}${a.message ? ` · "${a.message}"` : ''}</p>
+              </div>
+            </div>
+          </div>
+        `).join('') || '<p class="muted">No applicants yet.</p>'}
+      </div>
+    `;
+    if (root.querySelector('#apply')) {
+      root.querySelector('#apply').onclick = async () => {
+        await Api.applyOpportunity(opportunity.id, 'I would like to help.');
+        App.navigate('opportunity', { id: opportunity.id });
+      };
+    }
+  } catch (e) {
+    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+  }
+};
+
+// ---------- Messages & notifications ----------
+Views.messages = async function (root) {
+  if (!Store.isLoggedIn()) {
+    root.innerHTML = `<div class="error-box">Log in to view messages and notifications.</div>`;
+    return;
+  }
+  root.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading…</div>`;
+  try {
+    const [{ notifications, unread }, { messages }, { activity }] = await Promise.all([
+      Api.notifications(),
+      Api.inbox(),
+      Api.activity(),
+    ]);
+    root.innerHTML = `
+      <div class="card">
+        <h3>Notifications ${unread ? `<span class="badge badge-urgent">${unread} unread</span>` : ''}</h3>
+        ${notifications.length ? `<button class="btn" id="mark-read">Mark all read</button>` : ''}
+        ${notifications.map((n) => `
+          <div class="msg-row ${n.read ? '' : 'unread'}">
+            <strong>${n.title}</strong>
+            <p class="muted">${n.body || ''}</p>
+            <p class="muted" style="font-size:12px;">${new Date(n.createdAt).toLocaleString()}</p>
+          </div>
+        `).join('') || '<p class="muted">No notifications.</p>'}
+      </div>
+      <div class="card">
+        <h3>Inbox</h3>
+        ${messages.map((m) => `
+          <div class="msg-row">
+            <strong>${m.from ? m.from.name : '?'} ${m.to ? `→ ${m.to.name}` : m.projectId ? '(project)' : ''}</strong>
+            ${m.announcement ? '<span class="badge badge-urgent">announcement</span>' : ''}
+            <p>${m.body}</p>
+            <p class="muted" style="font-size:12px;">${new Date(m.createdAt).toLocaleString()}</p>
+          </div>
+        `).join('') || '<p class="muted">No messages yet.</p>'}
+        <hr class="divider" />
+        <h3>Send a DM</h3>
+        <div id="dm-msg"></div>
+        <input class="input" id="dm-to" placeholder="Recipient user ID" />
+        <textarea class="input" id="dm-body" rows="2" placeholder="Message"></textarea>
+        <button class="btn btn-primary" id="dm-send">Send</button>
+      </div>
+      <div class="card">
+        <h3>Activity feed</h3>
+        ${activity.map((a) => `
+          <div class="msg-row">
+            <p>${a.summary}</p>
+            <p class="muted" style="font-size:12px;">${new Date(a.createdAt).toLocaleString()}</p>
+          </div>
+        `).join('') || '<p class="muted">No recent activity.</p>'}
+      </div>
+    `;
+    if (root.querySelector('#mark-read')) {
+      root.querySelector('#mark-read').onclick = async () => {
+        await Api.markNotificationsRead({ all: true });
+        App.navigate('messages');
+      };
+    }
+    root.querySelector('#dm-send').onclick = async () => {
+      const toUserId = root.querySelector('#dm-to').value.trim();
+      const body = root.querySelector('#dm-body').value.trim();
+      const msg = root.querySelector('#dm-msg');
+      try {
+        await Api.sendMessage({ toUserId, body });
+        App.navigate('messages');
+      } catch (e) {
+        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+      }
+    };
+  } catch (e) {
+    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+  }
+};
+
+// ---------- Organizations ----------
+Views.organizations = async function (root) {
+  root.innerHTML = `
+    <div class="card">
+      <h3>Organizations</h3>
+      <p class="muted">NGO, school, college, club, and small-business workspaces.</p>
+    </div>
+    ${Store.isLoggedIn() ? `
+    <div class="card">
+      <h3>Create workspace</h3>
+      <div id="create-msg"></div>
+      <input class="input" id="name" placeholder="Organization name" />
+      <select class="input" id="type">
+        <option value="ngo">NGO</option>
+        <option value="school">School</option>
+        <option value="college">College</option>
+        <option value="club">Club</option>
+        <option value="small_business">Small business</option>
+      </select>
+      <textarea class="input" id="desc" rows="2" placeholder="Description"></textarea>
+      <button class="btn btn-primary" id="create">Create</button>
+    </div>` : ''}
+    <div id="list" class="grid"><div class="loading-line"><span class="spinner"></span> Loading…</div></div>
+  `;
+  if (Store.isLoggedIn()) {
+    root.querySelector('#create').onclick = async () => {
+      const name = root.querySelector('#name').value.trim();
+      const type = root.querySelector('#type').value;
+      const description = root.querySelector('#desc').value.trim();
+      const msg = root.querySelector('#create-msg');
+      if (!name) return;
+      try {
+        const { organization } = await Api.createOrganization({ name, type, description });
+        App.navigate('organization', { id: organization.id });
+      } catch (e) {
+        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+      }
+    };
+  }
+  try {
+    const { organizations } = await Api.listOrganizations();
+    const list = root.querySelector('#list');
+    list.innerHTML = organizations.length ? organizations.map((o) => `
+      <div class="card">
+        <span class="badge">${o.type}</span>
+        <h3>${o.name}</h3>
+        <p class="muted">${o.description || ''}</p>
+        <p class="muted">${o.memberCount} members</p>
+        <button class="btn btn-primary" data-id="${o.id}">Open</button>
+      </div>
+    `).join('') : '<p class="muted">No organizations yet.</p>';
+    list.querySelectorAll('[data-id]').forEach((btn) => {
+      btn.onclick = () => App.navigate('organization', { id: btn.getAttribute('data-id') });
+    });
+  } catch (e) {
+    root.querySelector('#list').innerHTML = `<div class="error-box">${e.message}</div>`;
+  }
+};
+
+Views.organization = async function (root, params) {
+  root.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading…</div>`;
+  try {
+    const { organization, members, opportunities } = await Api.getOrganization(params.id);
+    root.innerHTML = `
+      <div class="card">
+        <span class="badge">${organization.type}</span>
+        <h3>${organization.name}</h3>
+        <p class="muted">${organization.description || ''}</p>
+        ${Store.isLoggedIn() ? `<button class="btn btn-primary" id="join">Join</button>` : ''}
+      </div>
+      <div class="card">
+        <h3>Members</h3>
+        ${members.map((m) => `<span class="badge">${m.name} <span class="muted">(${m.role})</span></span>`).join(' ')}
+      </div>
+      <div class="card">
+        <h3>Open recruitments</h3>
+        ${opportunities.length ? opportunities.map((o) => `
+          <div class="result-row">
+            <div><strong>${o.title}</strong> <span class="badge">${o.type}</span></div>
+          </div>
+        `).join('') : '<p class="muted">None yet.</p>'}
+      </div>
+      ${Store.isLoggedIn() ? `
+      <div class="card">
+        <h3>Recruit volunteers</h3>
+        <div id="recruit-msg"></div>
+        <input class="input" id="r-title" placeholder="Role / title" />
+        <textarea class="input" id="r-desc" rows="2" placeholder="What you need"></textarea>
+        <input class="input" id="r-skills" placeholder="Skills (comma-separated)" />
+        <button class="btn btn-primary" id="recruit">Post recruitment</button>
+      </div>` : ''}
+    `;
+    if (root.querySelector('#join')) {
+      root.querySelector('#join').onclick = async () => {
+        await Api.joinOrganization(organization.id);
+        App.navigate('organization', { id: organization.id });
+      };
+    }
+    if (root.querySelector('#recruit')) {
+      root.querySelector('#recruit').onclick = async () => {
+        const title = root.querySelector('#r-title').value.trim();
+        const description = root.querySelector('#r-desc').value.trim();
+        const skillsNeeded = root.querySelector('#r-skills').value.split(',').map((s) => s.trim()).filter(Boolean);
+        const msg = root.querySelector('#recruit-msg');
+        try {
+          const { opportunity } = await Api.recruit(organization.id, { title, description, skillsNeeded });
+          msg.innerHTML = `<div class="info-box">Posted. <a href="#opportunity?id=${opportunity.id}" style="color:var(--cyan);">View</a></div>`;
+        } catch (e) {
+          msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+        }
+      };
+    }
+  } catch (e) {
+    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+  }
+};

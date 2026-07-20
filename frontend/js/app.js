@@ -4,9 +4,19 @@ const App = {
     login: Views.login,
     register: Views.register,
     dashboard: Views.dashboard,
+    profile: Views.profile,
     communities: Views.communities,
     community: Views.community,
     search: Views.search,
+    teams: Views.teams,
+    projects: Views.projects,
+    project: Views.project,
+    recommendations: Views.recommendations,
+    opportunities: Views.opportunities,
+    opportunity: Views.opportunity,
+    messages: Views.messages,
+    organizations: Views.organizations,
+    organization: Views.organization,
   },
 
   navigate(route, params = {}) {
@@ -28,9 +38,17 @@ const App = {
     const items = [
       ['home', 'Home'],
       ['search', 'AI Search'],
+      ['teams', 'Team Builder'],
       ['communities', 'Communities'],
+      ['projects', 'Projects'],
+      ['opportunities', 'Opportunities'],
+      ['recommendations', 'For You'],
+      ['organizations', 'Orgs'],
     ];
-    if (loggedIn) items.push(['dashboard', 'My Profile']);
+    if (loggedIn) {
+      items.push(['messages', 'Inbox']);
+      items.push(['dashboard', 'Profile']);
+    }
 
     const user = Store.getUser();
     const userChip = loggedIn && user

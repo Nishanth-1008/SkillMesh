@@ -3,6 +3,7 @@ const { Router } = require('../utils/router');
 const { getState, save } = require('../db');
 const { requireAuth } = require('../middleware/requireAuth');
 const { addRelationship } = require('../graph/relationships');
+const { computeTrustScore } = require('../services/trust');
 
 const router = new Router();
 
@@ -31,7 +32,21 @@ function serializeProfile(state, user) {
       return community ? { id: community.id, name: community.name, role: m.role } : null;
     })
     .filter(Boolean);
-  return { ...publicFields, skills, communities };
+  const trust = computeTrustScore(state, user.id);
+  const badges = (state.badges || []).filter((b) => b.userId === user.id);
+  const endorsements = (state.endorsements || [])
+    .filter((e) => e.toUserId === user.id)
+    .map((e) => {
+      const from = state.users.find((u) => u.id === e.fromUserId);
+      const skill = state.skills.find((s) => s.id === e.skillId);
+      return {
+        id: e.id,
+        from: from ? { id: from.id, name: from.name } : null,
+        skill: skill ? skill.name : null,
+        note: e.note,
+      };
+    });
+  return { ...publicFields, skills, communities, trust, badges, endorsements };
 }
 
 router.get('/:id', (req, res, next) => {

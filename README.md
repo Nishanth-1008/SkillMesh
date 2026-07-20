@@ -1,108 +1,87 @@
 # SkillMesh — Build Progress
 
-**Last updated:** Monday, July 20, 2026, 11:28 UTC (UI polish pass — richer visual design: gradient hero, glassmorphism cards, spinner loading states, ranked search results, nav avatar chip)
+**Last updated:** Monday, July 20, 2026 (Phase 2 — Intelligent Collaboration implemented)
 
 ## What was built
 
-Phase 1 ("Foundation") from `documentation/roadmap.md`, implemented end-to-end and
-tested via curl. Scope covered:
+### Phase 1 — Foundation ✅
 
-- ✅ Core infra: project setup, auth, role-based access, "DB schema", API foundation
-- ✅ Communities: create, join/leave, discovery/search, owner-only management
-- ✅ User profiles: basic info, skills, availability, location
-- ✅ Knowledge graph: person / skill / community nodes + relationship engine
-  (`has_skill`, `member_of`, `collaborated` edges)
-- ✅ AI search: natural-language input → intent detection → skill extraction →
-  candidate retrieval → ranked recommendations
-- ✅ Search & discovery: skill/people/community search, basic semantic-ish matching
-- ✅ Visualization: interactive knowledge graph, profile view, community overview
-- ✅ Security: auth, input validation, CORS-protected API
+- Core infra: project setup, auth, role-based access, DB schema, API foundation
+- Communities: create, join/leave, discovery/search, owner-only management
+- User profiles: basic info, skills, availability, location
+- Knowledge graph: person / skill / community nodes + relationship engine
+- AI search: natural-language → intent → skill extraction → ranked recommendations
+- Visualization: interactive knowledge graph
+- Security: auth, input validation, CORS
 
-All 8 items in the roadmap's **Phase 1 MVP Completion Criteria** are functional.
+### Phase 2 — Intelligent Collaboration ✅
+
+- **AI Team Builder** — goal-based teams with skill balancing, availability, compatibility, success prediction; optional auto-create project + invites
+- **Collaboration Engine** — projects, invitations, roles, join requests, timelines, collaboration history
+- **Smart Recommendations** — mentors, volunteers, experts, similar people, related skills, nearby contributors
+- **Trust & Reputation** — trust score, endorsements, contribution tracking, verification badges
+- **Opportunity Matching** — volunteer / mentorship / events / initiatives / org requests
+- **Communication** — DMs, team discussions, announcements, notifications, activity feed
+- **AI Enhancements** — hidden expert discovery, trust-aware ranking, collaboration prediction
+- **Organization Support** — NGO / school / college / club / small-business workspaces + recruit
+
+All Phase 2 MVP completion criteria from `documentation/roadmap.md` are functional in this offline build.
+
+**How to use it:** see [`documentation/usage_guide.md`](documentation/usage_guide.md).
 
 ## Important deviation from the architecture doc — and why
 
 `documentation/system_architecture.md` specifies Next.js/React, Node/Express,
-Supabase/PostgreSQL, and an LLM (Gemini/OpenAI) for NLU. **This sandbox has no
-outbound network access**, so `npm install` and any external API call fail
-immediately (verified — `npm install` returned `403 Forbidden` from the
-registry). Rather than produce a non-runnable scaffold, Phase 1 was built to
-the same architecture *shape* using only what ships with Node.js:
+Supabase/PostgreSQL, and an LLM (Gemini/OpenAI). This environment has limited
+network access for package installs, so Phase 1–2 keep the same architecture
+*shape* using Node.js builtins only:
 
-| Layer | Documented | Built (Phase 1, offline) |
+| Layer | Documented | Built |
 |---|---|---|
 | Frontend | Next.js + React + Tailwind | Static HTML/CSS/vanilla JS SPA (hash router) |
-| Backend | Node.js + Express | Node.js `http` + a ~100-line Express-like router |
-| Database | PostgreSQL / Supabase | JSON-file store (`backend/data/db.json`) behind a `db.js` module |
-| Auth | (unspecified) | scrypt password hashing + hand-rolled HMAC JWT, both via Node's `crypto` |
-| AI / NLU | Gemini / OpenAI LLM | Deterministic dictionary + heuristic intent/skill extractor |
+| Backend | Node.js + Express | Node.js `http` + Express-like router |
+| Database | PostgreSQL / Supabase | JSON-file store (`backend/data/db.json`) |
+| Auth | (unspecified) | scrypt + HMAC JWT via Node `crypto` |
+| AI / NLU | Gemini / OpenAI LLM | Deterministic dictionary + heuristic extractor |
 
-Every one of these is isolated behind a single module (`db.js`,
-`utils/auth.js`, `nlp/skillExtractor.js`) with comments explaining the swap.
-Moving to real Postgres, Express, Next.js, and an LLM call later should only
-require rewriting the inside of those files — no route or view code should
-need to change, since the data shapes already match what a real DB/LLM would
-return.
+Swap points: `db.js`, `utils/auth.js`, `nlp/skillExtractor.js`.
+
+## How to run it
+
+```bash
+cd backend && node src/seed.js && node src/server.js
+# other terminal:
+cd frontend && python3 -m http.server 8080
+```
+
+- API: http://localhost:4000
+- UI: http://localhost:8080
+- Demo login: `raj@example.com` / `password123`
+
+Full API reference, curl examples, and UI walkthrough: **`documentation/usage_guide.md`**.
 
 ## Repo layout
 
 ```
 SkillMesh/
-├── documentation/            (original docs, untouched)
-├── backend/
-│   ├── src/
-│   │   ├── server.js         entrypoint, mounts routers by URL prefix
-│   │   ├── db.js             JSON-file "database"
-│   │   ├── seed.js           demo data generator
-│   │   ├── nlp/skillExtractor.js   intent detection + skill extraction
-│   │   ├── graph/relationships.js  knowledge graph edge engine + graph builder
-│   │   ├── middleware/requireAuth.js
-│   │   ├── utils/{auth,router}.js
-│   │   └── routes/{auth,communities,profiles,search,graph}.js
-│   └── data/db.json          generated at runtime (seed or first request)
-└── frontend/
-    ├── index.html
-    ├── css/style.css         dark/glassmorphism theme per the architecture doc
-    └── js/{api,state,views,graph,app}.js
+├── documentation/
+│   ├── roadmap.md
+│   ├── system_architecture.md
+│   ├── project_story.md
+│   └── usage_guide.md
+├── backend/src/
+│   ├── server.js, db.js, seed.js
+│   ├── nlp/, graph/, middleware/, utils/
+│   ├── services/{trust,teamBuilder,recommendations,notify}.js
+│   └── routes/{auth,communities,profiles,search,graph,
+│               projects,teams,recommendations,trust,
+│               opportunities,messages,organizations}.js
+└── frontend/{index.html,css/,js/}
 ```
-
-## How to run it
-
-```bash
-# 1. Seed demo data (5 users in one community, all pw: password123)
-cd backend && node src/seed.js
-
-# 2. Start the API (http://localhost:4000)
-node src/server.js
-
-# 3. In another terminal, serve the frontend (http://localhost:8080)
-cd ../frontend && python3 -m http.server 8080
-```
-
-No `npm install` needed — zero dependencies by design (see deviation note above).
-
-## What I verified this session
-
-- Register / login / `me` (JWT round-trips correctly)
-- Community create / list / search / get / join / leave / owner-only update
-- Profile view/update, add/remove skill (writes a graph edge each time)
-- AI search: `"I need someone to teach robotics"` → correctly detected
-  `intent: find_person`, skills `[robotics, teaching]`, and ranked Raj Malhotra
-  top with a full score breakdown
-- AI search: `"emergency electrician needed now"` → correctly detected
-  `intent: emergency`, `urgent: true`, and surfaced the electrician despite
-  "busy" availability
-- `/api/graph` returns a well-formed node/edge payload; the frontend's SVG
-  renderer draws it as three concentric rings (communities → people → skills)
-- Frontend served statically and confirmed it can reach the backend
-  cross-origin (CORS preflight + GET both return correctly)
 
 ## Known limitations / next steps
 
-- JSON-file DB is fine for a demo but has no concurrency control — a real
-  Postgres migration is the first Phase 2 task if this leaves the sandbox
-- Skill extraction is a fixed dictionary, not a real LLM — good enough to
-  demo the UX, not the actual semantic reasoning the architecture doc wants
-- No automated tests yet, only manual curl-based verification
-- Frontend is intentionally minimal (no Next.js SSR, no component framework)
-  since it was built without registry access
+- JSON-file DB has no concurrency control — Postgres is the first real upgrade
+- Skill extraction is dictionary/heuristic, not an LLM
+- No automated test suite yet (manual curl smoke tests pass)
+- Phase 3+ from the roadmap (analytics, federation, autonomous agents, …) not started
