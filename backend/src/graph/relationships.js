@@ -1,0 +1,72 @@
+const crypto = require('crypto');
+
+// The "relationship engine" from roadmap.md: a small helper that writes
+// edges into the knowledge graph and keeps them de-duplicated. Every node
+// is referenced as { type, id } so the graph can hold people, skills,
+// communities, and (later) organizations/projects under one edge shape.
+
+function addRelationship(state, { fromType, fromId, toType, toId, kind, weight = 1 }) {
+  const existing = state.relationships.find(
+    (r) => r.fromType === fromType && r.fromId === fromId &&
+           r.toType === toType && r.toId === toId && r.kind === kind
+  );
+  if (existing) {
+    existing.weight += weight;
+    return existing;
+  }
+  const rel = {
+    id: crypto.randomUUID(),
+    fromType, fromId, toType, toId, kind, weight,
+    createdAt: new Date().toISOString(),
+  };
+  state.relationships.push(rel);
+  return rel;
+}
+
+// Build a graph payload { nodes, edges } for visualization, optionally
+// scoped to a single community so the frontend doesn't have to render the
+// entire mesh at once.
+function buildGraph(state, { communityId } = {}) {
+  const nodes = [];
+  const nodeIds = new Set();
+
+  const addNode = (type, id, label, meta = {}) => {
+    const key = `${type}:${id}`;
+    if (nodeIds.has(key)) return;
+    nodeIds.add(key);
+    nodes.push({ id: key, type, label, ...meta });
+  };
+
+  let memberIds = null;
+  if (communityId) {
+    memberIds = new Set(
+      state.communityMembers.filter((m) => m.communityId === communityId).map((m) => m.userId)
+    );
+  }
+
+  for (const user of state.users) {
+    if (memberIds && !memberIds.has(user.id)) continue;
+    addNode('person', user.id, user.name, { location: user.location || null });
+  }
+  for (const community of state.communities) {
+    if (communityId && community.id !== communityId) continue;
+    addNode('community', community.id, community.name);
+  }
+  for (const skill of state.skills) {
+    addNode('skill', skill.id, skill.name);
+  }
+
+  const edges = state.relationships
+    .filter((r) => nodeIds.has(`${r.fromType}:${r.fromId}`) && nodeIds.has(`${r.toType}:${r.toId}`))
+    .map((r) => ({
+      id: r.id,
+      source: `${r.fromType}:${r.fromId}`,
+      target: `${r.toType}:${r.toId}`,
+      kind: r.kind,
+      weight: r.weight,
+    }));
+
+  return { nodes, edges };
+}
+
+module.exports = { addRelationship, buildGraph };
