@@ -52,7 +52,11 @@ function extractSkills(text) {
   const matched = new Set();
 
   for (const [canonicalSkill, synonyms] of Object.entries(SKILL_DICTIONARY)) {
-    if (synonyms.some((syn) => normalized.includes(syn))) {
+    if (synonyms.some((syn) => {
+      // Word-boundary match so short synonyms like "ui" don't hit inside "build"
+      const escaped = syn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:[^a-z0-9]|$)`).test(normalized);
+    })) {
       matched.add(canonicalSkill);
     }
   }
@@ -64,7 +68,8 @@ function extractSkills(text) {
     const stopwords = new Set([
       'need', 'someone', 'want', 'looking', 'for', 'with', 'find', 'help',
       'nearby', 'near', 'me', 'the', 'and', 'who', 'can', 'a', 'an', 'to',
-      'build', 'our', 'we', 'i', 'is', 'are', 'in', 'my', 'this',
+      'build', 'our', 'we', 'i', 'is', 'are', 'in', 'my', 'this', 'team',
+      'hackathon', 'please', 'someone',
     ]);
     normalized
       .replace(/[^a-z0-9\s]/g, ' ')
@@ -76,9 +81,21 @@ function extractSkills(text) {
   const urgent = INTENT_KEYWORDS.emergency.some((kw) => normalized.includes(kw));
   const locationHint = /\bnear(by)? me\b|\bnearby\b|\bnear\b/.test(normalized);
 
+  let skills = Array.from(matched);
+  const intent = detectIntent(normalized);
+
+  // When building a team from a vague goal ("hackathon team"), seed common
+  // complementary skill slots so the team builder has something to balance.
+  if (intent === 'build_team' && skills.length < 2) {
+    const defaults = ['programming', 'design', 'leadership'];
+    for (const d of defaults) {
+      if (!skills.includes(d)) skills.push(d);
+    }
+  }
+
   return {
-    intent: detectIntent(normalized),
-    skills: Array.from(matched),
+    intent,
+    skills,
     urgent,
     locationHint,
   };

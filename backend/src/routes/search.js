@@ -2,11 +2,11 @@ const { Router } = require('../utils/router');
 const { getState } = require('../db');
 const { optionalAuth } = require('../middleware/requireAuth');
 const { extractSkills } = require('../nlp/skillExtractor');
+const { computeTrustScore } = require('../services/trust');
+const { buildTeam, findHiddenExperts } = require('../services/teamBuilder');
 
 const router = new Router();
 
-// Basic string similarity so "robot" still matches the "robotics" skill node
-// and typos/partials don't return zero results.
 function skillMatches(skillName, queryToken) {
   return skillName.includes(queryToken) || queryToken.includes(skillName);
 }
@@ -23,31 +23,37 @@ function scoreCandidate(state, user, extractedSkills, { communityId, urgent }) {
   );
   if (matchedSkills.length === 0) return null;
 
-  // --- AI Decision Factors, weighted per documentation/system_architecture.md ---
+  const trust = computeTrustScore(state, user.id);
+
   let score = 0;
-  score += matchedSkills.length * 10; // Skills — primary signal
+  score += matchedSkills.length * 10; // Skills
+  score += trust.score * 0.2; // Trust (Phase 2)
 
   const isMember = communityId
     ? state.communityMembers.some((m) => m.communityId === communityId && m.userId === user.id)
     : true;
-  if (!isMember) return null; // out of scope for this community's search
-  score += 3; // Community membership counts toward "trust" proxy in Phase 1
+  if (!isMember) return null;
+  score += 3;
 
-  if (user.availability === 'available') score += urgent ? 6 : 3; // Availability
+  if (user.availability === 'available') score += urgent ? 6 : 3;
   else if (user.availability === 'busy') score -= 2;
 
-  if (user.location) score += 1; // Distance — Phase 1 has no geo distance calc yet, just presence
+  if (user.location) score += 1;
 
   const priorCollab = state.relationships.filter(
     (r) => r.fromType === 'person' && r.fromId === user.id && r.kind === 'collaborated'
   ).length;
-  score += priorCollab * 2; // Previous collaborations
+  score += priorCollab * 2;
+
+  const endorsements = state.endorsements.filter((e) => e.toUserId === user.id).length;
+  score += endorsements * 2; // Reputation
 
   return {
     user: { id: user.id, name: user.name, location: user.location, availability: user.availability },
     matchedSkills,
     skills: userSkillNames,
-    score,
+    trustScore: trust.score,
+    score: Math.round(score * 10) / 10,
   };
 }
 
@@ -62,6 +68,29 @@ router.post('/', optionalAuth, (req, res, next) => {
     const state = getState();
     const understanding = extractSkills(query);
 
+    // Phase 2: build_team intent → AI Team Builder
+    if (understanding.intent === 'build_team') {
+      const teamResult = buildTeam(state, {
+        skills: understanding.skills,
+        communityId,
+        size: 4,
+      });
+      return res.json({
+        query,
+        understanding,
+        mode: 'team_builder',
+        team: teamResult,
+        results: teamResult.team.map((m) => ({
+          user: m.user,
+          matchedSkills: m.covers,
+          skills: m.skills,
+          trustScore: m.trustScore,
+          score: m.score,
+        })),
+        resultCount: teamResult.team.length,
+      });
+    }
+
     const candidates = state.users
       .map((u) => scoreCandidate(state, u, understanding.skills, {
         communityId, urgent: understanding.urgent,
@@ -70,11 +99,20 @@ router.post('/', optionalAuth, (req, res, next) => {
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
 
+    // Attach hidden experts when intent suggests discovery
+    const hidden = findHiddenExperts(state, {
+      skills: understanding.skills,
+      communityId,
+      limit: 5,
+    });
+
     res.json({
       query,
-      understanding, // intent, extracted skills, urgent flag — transparency into "how it thinks"
+      understanding,
+      mode: understanding.intent === 'emergency' ? 'emergency' : 'people',
       results: candidates,
       resultCount: candidates.length,
+      hiddenExperts: hidden,
     });
   } catch (e) { next(e); }
 });

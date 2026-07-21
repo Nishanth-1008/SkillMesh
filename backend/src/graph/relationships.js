@@ -56,6 +56,18 @@ function buildGraph(state, { communityId } = {}) {
     addNode('skill', skill.id, skill.name);
   }
 
+  // Phase 2 nodes
+  for (const project of state.projects || []) {
+    if (communityId && project.communityId && project.communityId !== communityId) continue;
+    if (communityId && !project.communityId) continue;
+    addNode('project', project.id, project.title, { status: project.status });
+  }
+  for (const org of state.organizations || []) {
+    if (communityId && org.communityId && org.communityId !== communityId) continue;
+    if (communityId && !org.communityId) continue;
+    addNode('organization', org.id, org.name, { orgType: org.type });
+  }
+
   const edges = state.relationships
     .filter((r) => nodeIds.has(`${r.fromType}:${r.fromId}`) && nodeIds.has(`${r.toType}:${r.toId}`))
     .map((r) => ({

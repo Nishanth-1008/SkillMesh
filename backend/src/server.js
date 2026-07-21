@@ -2,58 +2,67 @@ const http = require('http');
 const { Router } = require('./utils/router');
 const { load } = require('./db');
 
-load(); // initialize / load db.json on boot
+load();
 
 const app = new Router();
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'skillmesh-backend', phase: 1, time: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    service: 'skillmesh-backend',
+    phase: 6,
+    features: [
+      // 1
+      'auth', 'communities', 'profiles', 'graph', 'ai-search',
+      // 2
+      'team-builder', 'projects', 'recommendations', 'trust',
+      'opportunities', 'messaging', 'organizations',
+      // 3
+      'analytics', 'events', 'gamification', 'admin',
+      // 4
+      'federation', 'public-hub', 'emergency', 'integrations',
+      'webhooks', 'api-keys', 'plugins',
+      // 5
+      'global-network', 'reasoning', 'passport', 'impact', 'scenarios', 'research',
+      // 6
+      'agents', 'digital-twin', 'community-memory', 'auto-teams', 'community-os',
+    ],
+    time: new Date().toISOString(),
+  });
 });
 
-app.use((req, res, next) => {
-  const authRouter = require('./routes/auth');
-  if (req.url.startsWith('/api/auth')) {
-    req.url = req.url.replace('/api/auth', '') || '/';
-    return authRouter.handle(req, res);
-  }
-  next();
-});
+function mount(prefix, routeModule) {
+  app.use((req, res, next) => {
+    if (req.url.startsWith(prefix)) {
+      const router = require(routeModule);
+      req.url = req.url.replace(prefix, '') || '/';
+      return router.handle(req, res);
+    }
+    next();
+  });
+}
 
-app.use((req, res, next) => {
-  const communitiesRouter = require('./routes/communities');
-  if (req.url.startsWith('/api/communities')) {
-    req.url = req.url.replace('/api/communities', '') || '/';
-    return communitiesRouter.handle(req, res);
-  }
-  next();
-});
+// Phase 1–2
+mount('/api/auth', './routes/auth');
+mount('/api/communities', './routes/communities');
+mount('/api/profiles', './routes/profiles');
+mount('/api/search', './routes/search');
+mount('/api/graph', './routes/graph');
+mount('/api/projects', './routes/projects');
+mount('/api/teams', './routes/teams');
+mount('/api/recommendations', './routes/recommendations');
+mount('/api/trust', './routes/trust');
+mount('/api/opportunities', './routes/opportunities');
+mount('/api/messages', './routes/messages');
+mount('/api/organizations', './routes/organizations');
 
-app.use((req, res, next) => {
-  const profilesRouter = require('./routes/profiles');
-  if (req.url.startsWith('/api/profiles')) {
-    req.url = req.url.replace('/api/profiles', '') || '/';
-    return profilesRouter.handle(req, res);
-  }
-  next();
-});
-
-app.use((req, res, next) => {
-  const searchRouter = require('./routes/search');
-  if (req.url.startsWith('/api/search')) {
-    req.url = req.url.replace('/api/search', '') || '/';
-    return searchRouter.handle(req, res);
-  }
-  next();
-});
-
-app.use((req, res, next) => {
-  const graphRouter = require('./routes/graph');
-  if (req.url.startsWith('/api/graph')) {
-    req.url = req.url.replace('/api/graph', '') || '/';
-    return graphRouter.handle(req, res);
-  }
-  next();
-});
+// Phase 3–6
+mount('/api/analytics', './routes/analytics');
+mount('/api/events', './routes/events');
+mount('/api/gamification', './routes/gamification');
+mount('/api/ecosystem', './routes/ecosystem');
+mount('/api/intelligence', './routes/intelligence');
+mount('/api/autonomy', './routes/autonomy');
 
 const PORT = process.env.PORT || 4000;
 
@@ -67,6 +76,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`[SkillMesh] backend listening on http://localhost:${PORT}`);
+  console.log(`[SkillMesh] Phases 1–6 complete — Autonomous Community Intelligence`);
   console.log(`[SkillMesh] try: curl http://localhost:${PORT}/health`);
 });
 

@@ -4,9 +4,28 @@ const App = {
     login: Views.login,
     register: Views.register,
     dashboard: Views.dashboard,
+    profile: Views.profile,
     communities: Views.communities,
     community: Views.community,
     search: Views.search,
+    teams: Views.teams,
+    projects: Views.projects,
+    project: Views.project,
+    recommendations: Views.recommendations,
+    opportunities: Views.opportunities,
+    opportunity: Views.opportunity,
+    messages: Views.messages,
+    organizations: Views.organizations,
+    organization: Views.organization,
+    // Phases 3–6
+    analytics: Views.analytics,
+    events: Views.events,
+    leaderboard: Views.leaderboard,
+    hub: Views.hub,
+    emergency: Views.emergency,
+    developers: Views.developers,
+    intelligence: Views.intelligence,
+    autonomy: Views.autonomy,
   },
 
   navigate(route, params = {}) {
@@ -28,9 +47,25 @@ const App = {
     const items = [
       ['home', 'Home'],
       ['search', 'AI Search'],
+      ['teams', 'Teams'],
       ['communities', 'Communities'],
+      ['analytics', 'Intel'],
+      ['events', 'Events'],
+      ['hub', 'Hub'],
+      ['emergency', 'Emergency'],
+      ['intelligence', 'Global'],
+      ['autonomy', 'Agents'],
+      ['leaderboard', 'Rewards'],
+      ['projects', 'Projects'],
+      ['opportunities', 'Opps'],
+      ['organizations', 'Orgs'],
+      ['developers', 'Dev'],
     ];
-    if (loggedIn) items.push(['dashboard', 'My Profile']);
+    if (loggedIn) {
+      items.push(['messages', 'Inbox']);
+      items.push(['recommendations', 'For You']);
+      items.push(['dashboard', 'Profile']);
+    }
 
     const user = Store.getUser();
     const userChip = loggedIn && user

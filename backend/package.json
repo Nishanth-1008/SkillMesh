@@ -1,7 +1,7 @@
 {
   "name": "skillmesh-backend",
-  "version": "0.1.0",
-  "description": "SkillMesh Phase 1 backend - core infra, communities, profiles, knowledge graph, AI search. Zero external dependencies (Node.js builtins only) so it runs anywhere without npm install.",
+  "version": "0.6.0",
+  "description": "SkillMesh Phases 1–6 — Autonomous Community Intelligence. Zero external dependencies.",
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
