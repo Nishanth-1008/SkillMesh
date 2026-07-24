@@ -45,7 +45,7 @@ const App = {
     const { route } = this.parseHash();
     const loggedIn = Store.isLoggedIn();
     const items = [
-      ['home', 'Home'],
+
       ['search', 'AI Search'],
       ['teams', 'Teams'],
       ['communities', 'Communities'],
