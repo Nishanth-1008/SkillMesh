@@ -44,6 +44,8 @@ const App = {
     const nav = document.getElementById('navlinks');
     const { route } = this.parseHash();
     const loggedIn = Store.isLoggedIn();
+    
+    // Feature Locking: show all layout metadata regardless of login state.
     const items = [
       ['home', 'Home'],
       ['search', 'AI Search'],
@@ -60,27 +62,48 @@ const App = {
       ['opportunities', 'Opps'],
       ['organizations', 'Orgs'],
       ['developers', 'Dev'],
+      ['messages', 'Inbox (Locked)'],
+      ['recommendations', 'For You (Locked)'],
+      ['dashboard', 'Profile (Locked)'],
     ];
-    if (loggedIn) {
-      items.push(['messages', 'Inbox']);
-      items.push(['recommendations', 'For You']);
-      items.push(['dashboard', 'Profile']);
-    }
+
+    const protectedRoutes = ['messages', 'recommendations', 'dashboard'];
 
     const user = Store.getUser();
     const userChip = loggedIn && user
       ? `<span class="avatar-chip">${(user.name || '?').charAt(0).toUpperCase()}</span>`
-      : '';
+      : `<span class="avatar-chip" style="background:rgba(255,255,255,0.1);color:var(--text-dim);">👤</span>`;
 
     nav.innerHTML = items
-      .map(([r, label]) => `<button data-route="${r}" class="${route === r ? 'active' : ''}">${label}</button>`)
+      .map(([r, label]) => {
+        // Strip "(Locked)" if user is logged in
+        let displayLabel = label;
+        if (loggedIn && label.includes('(Locked)')) {
+          displayLabel = label.replace(' (Locked)', '');
+        }
+
+        if (r === 'dashboard') {
+          return `<button data-route="${r}" class="profile-nav-link ${route === r ? 'active' : ''}">${userChip}<span>${displayLabel}</span></button>`;
+        }
+
+        return `<button data-route="${r}" class="${route === r ? 'active' : ''}">${displayLabel}</button>`;
+      })
       .join('') + (loggedIn
-        ? `${userChip}<button class="btn-danger" id="logout">Log out</button>`
-        : `<button class="btn-primary" data-route="login">Log in</button>`);
+        ? `<button class="btn-danger" id="logout" style="margin-top:10px;">Log out</button>`
+        : `<button class="btn-primary" data-route="login" style="margin-top:10px;">Log in</button>`);
 
     nav.querySelectorAll('[data-route]').forEach((btn) => {
-      btn.onclick = () => this.navigate(btn.getAttribute('data-route'));
+      btn.onclick = () => {
+        const targetRoute = btn.getAttribute('data-route');
+        if (protectedRoutes.includes(targetRoute) && !loggedIn) {
+          // Trigger login modal/redirect if guest tries to use a locked feature
+          this.navigate('login');
+        } else {
+          this.navigate(targetRoute);
+        }
+      };
     });
+    
     const logoutBtn = document.getElementById('logout');
     if (logoutBtn) {
       logoutBtn.onclick = () => {
@@ -101,6 +124,27 @@ const App = {
 
   async init() {
     window.addEventListener('hashchange', () => this.render());
+    
+    // Sidebar toggle logic
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    
+    const toggleSidebar = () => {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('open');
+    };
+    
+    if (toggleBtn) toggleBtn.onclick = toggleSidebar;
+    if (overlay) overlay.onclick = toggleSidebar;
+
+    // Close sidebar on navigation (mobile friendly)
+    window.addEventListener('hashchange', () => {
+      if (sidebar && sidebar.classList.contains('open')) {
+        toggleSidebar();
+      }
+    });
+
     if (Store.isLoggedIn() && !Store.getUser()) {
       try {
         const { user } = await Api.me();
@@ -110,7 +154,7 @@ const App = {
       }
     }
     this.render();
-  },
+  }
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());

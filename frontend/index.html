@@ -10,12 +10,24 @@
 <body>
   <div id="app">
     <nav class="topnav">
-      <div class="brand">
-        <span class="brand-mark">✦</span>
-        <span>SkillMesh</span>
+      <div class="topnav-left">
+        <div class="brand">
+          <span class="brand-mark">✦</span>
+          <span>SkillMesh</span>
+        </div>
+        <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle sidebar">
+          <span class="hamburger-icon">≡</span>
+          <span class="sidebar-toggle-text">Menu</span>
+        </button>
       </div>
-      <div class="navlinks" id="navlinks"></div>
     </nav>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="navlinks" id="navlinks"></div>
+    </aside>
+    
+    <!-- Overlay for mobile click-to-close -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
     <main id="view" class="view"></main>
 

@@ -1,8 +1,14 @@
 const http = require('http');
 const { Router } = require('./utils/router');
-const { load } = require('./db');
+const { load, getState } = require('./db');
 
 load();
+
+const state = getState();
+if (state.users.length === 0) {
+  console.log('[SkillMesh] Empty database detected. Auto-seeding demo data...');
+  require('./seed');
+}
 
 const app = new Router();
 
