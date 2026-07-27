@@ -47,7 +47,7 @@ const App = {
     
     // Feature Locking: show all layout metadata regardless of login state.
     const items = [
-      ['home', 'Home'],
+
       ['search', 'AI Search'],
       ['teams', 'Teams'],
       ['communities', 'Communities'],
