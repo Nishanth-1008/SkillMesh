@@ -108,51 +108,37 @@ const App = {
     const { route } = this.parseHash();
     const loggedIn = Store.isLoggedIn();
     
-    // Feature Locking: show all layout metadata regardless of login state.
+    // Left sidebar navigation config (cleaned of redundant Inbox, Profile, For You, and Log Out links)
     const items = [
-      ['search', 'AI Search'],
-      ['teams', 'Teams'],
-      ['communities', 'Communities'],
-      ['analytics', 'Intel'],
-      ['events', 'Events'],
-      ['hub', 'Hub'],
-      ['emergency', 'Emergency'],
-      ['intelligence', 'Global'],
-      ['autonomy', 'Agents'],
-      ['leaderboard', 'Rewards'],
-      ['projects', 'Projects'],
-      ['opportunities', 'Opps'],
-      ['organizations', 'Orgs'],
-      ['developers', 'Dev'],
-      ['messages', 'Inbox (Locked)'],
-      ['recommendations', 'For You (Locked)'],
-      ['dashboard', 'Profile (Locked)'],
+      ['search', '🔍', 'AI Search'],
+      ['teams', '👥', 'AI Team Builder'],
+      ['communities', '🌐', 'Communities'],
+      ['analytics', '📊', 'Community Intel'],
+      ['events', '📅', 'Events & Impact'],
+      ['hub', '🌌', 'Public Hub'],
+      ['emergency', '🚨', 'Emergency Center'],
+      ['intelligence', '🧠', 'Global Reasoning'],
+      ['autonomy', '🤖', 'Autonomous Agents'],
+      ['leaderboard', '🏆', 'Rewards & Points'],
+      ['projects', '📁', 'Projects'],
+      ['opportunities', '🎯', 'Opportunities'],
+      ['organizations', '🏢', 'Organizations'],
+      ['developers', '💻', 'Developer APIs'],
     ];
 
     const protectedRoutes = ['messages', 'recommendations', 'dashboard'];
 
-    const user = Store.getUser();
-    const userChip = loggedIn && user
-      ? `<span class="avatar-chip">${(user.name || '?').charAt(0).toUpperCase()}</span>`
-      : `<span class="avatar-chip" style="background:rgba(255,255,255,0.1);color:var(--text-dim);">👤</span>`;
-
     if (nav) {
       nav.innerHTML = items
-        .map(([r, label]) => {
+        .map(([r, icon, label]) => {
           let displayLabel = label;
           if (loggedIn && label.includes('(Locked)')) {
             displayLabel = label.replace(' (Locked)', '');
           }
 
-          if (r === 'dashboard') {
-            return `<button data-route="${r}" class="profile-nav-link ${route === r ? 'active' : ''}">${userChip}<span>${displayLabel}</span></button>`;
-          }
-
-          return `<button data-route="${r}" class="${route === r ? 'active' : ''}">${displayLabel}</button>`;
+          return `<button data-route="${r}" data-label="${displayLabel}" class="${route === r ? 'active' : ''}"><span>${icon}</span><span>${displayLabel}</span></button>`;
         })
-        .join('') + (loggedIn
-          ? `<button class="btn-danger" id="logout" style="margin-top:10px;">Log out</button>`
-          : `<button class="btn-primary" data-route="login" style="margin-top:10px;">Log in</button>`);
+        .join('');
 
       nav.querySelectorAll('[data-route]').forEach((btn) => {
         btn.onclick = () => {
@@ -164,16 +150,6 @@ const App = {
           }
         };
       });
-      
-      const logoutBtn = document.getElementById('logout');
-      if (logoutBtn) {
-        logoutBtn.onclick = () => {
-          Store.clearToken();
-          Store.setUser(null);
-          this.refreshNav();
-          this.navigate('home');
-        };
-      }
     }
 
     // Refresh TopNav components
@@ -680,23 +656,32 @@ const App = {
     this.initTopNav();
     window.addEventListener('hashchange', () => this.render());
     
-    // Sidebar toggle logic
+    // Sidebar toggle logic (desktop collapse vs mobile drawer)
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const toggleBtn = document.getElementById('sidebar-toggle');
     
     const toggleSidebar = () => {
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('open');
+      if (!sidebar) return;
+      if (window.innerWidth <= 992) {
+        sidebar.classList.toggle('open');
+        if (overlay) overlay.classList.toggle('open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
     };
     
     if (toggleBtn) toggleBtn.onclick = toggleSidebar;
-    if (overlay) overlay.onclick = toggleSidebar;
+    if (overlay) overlay.onclick = () => {
+      if (sidebar) sidebar.classList.remove('open');
+      overlay.classList.remove('open');
+    };
 
-    // Close sidebar on navigation (mobile friendly)
+    // Close mobile drawer on navigation
     window.addEventListener('hashchange', () => {
-      if (sidebar && sidebar.classList.contains('open')) {
-        toggleSidebar();
+      if (window.innerWidth <= 992 && sidebar && sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
       }
     });
 

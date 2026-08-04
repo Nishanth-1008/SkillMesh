@@ -1069,7 +1069,7 @@
       "title": "Volunteer match: Robotics Mentors for School Club",
       "body": "Volunteer Agent thinks you are a strong fit.",
       "link": "#opportunity?id=a1c73851-5154-4f84-803e-55c4a7ddbc1f",
-      "read": false,
+      "read": true,
       "createdAt": "2026-08-04T09:32:44.203Z"
     },
     {
@@ -1079,7 +1079,7 @@
       "title": "Reminder: Greenwood First-Aid Workshop",
       "body": "Starts 2026-08-01T10:00:00.000Z.",
       "link": "#events",
-      "read": false,
+      "read": true,
       "createdAt": "2026-08-04T09:32:44.203Z"
     },
     {

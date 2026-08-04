@@ -139,9 +139,18 @@ function renderProfile(root, profile, editable) {
 
   root.innerHTML = `
     <div class="card">
-      <h3><span class="avatar-chip">${(profile.name || '?').charAt(0).toUpperCase()}</span>${profile.name}</h3>
-      <p class="muted">📍 ${profile.location || 'No location set'} · ${profile.availability === 'available' ? '🟢' : '🟠'} ${profile.availability || 'unknown'}</p>
-      <div class="trust-bar">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h3 style="margin-bottom:4px;"><span class="avatar-chip">${(profile.name || '?').charAt(0).toUpperCase()}</span>${profile.name}</h3>
+          <p class="muted" style="margin:0;">📍 ${profile.location || 'No location set'} · ${profile.availability === 'available' ? '🟢' : '🟠'} ${profile.availability || 'unknown'}</p>
+        </div>
+        ${editable ? `
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn" id="profile-inbox-btn">📥 Inbox & Alerts</button>
+          <button class="btn btn-danger" id="profile-logout-btn">🚪 Log out</button>
+        </div>` : ''}
+      </div>
+      <div class="trust-bar" style="margin-top:16px;">
         <div class="trust-label">Trust score <strong>${trustScore}</strong>/100</div>
         <div class="trust-track"><div class="trust-fill" style="width:${trustScore}%"></div></div>
       </div>
@@ -206,6 +215,20 @@ function renderProfile(root, profile, editable) {
   `;
 
   if (editable) {
+    const inboxBtn = root.querySelector('#profile-inbox-btn');
+    if (inboxBtn) {
+      inboxBtn.onclick = () => App.navigate('messages');
+    }
+    const logoutBtn = root.querySelector('#profile-logout-btn');
+    if (logoutBtn) {
+      logoutBtn.onclick = () => {
+        Store.clearToken();
+        Store.setUser(null);
+        App.refreshNav();
+        App.navigate('home');
+      };
+    }
+
     root.querySelector('#save-profile').onclick = async () => {
       const msg = root.querySelector('#profile-msg');
       const interestsRaw = root.querySelector('#edit-interests').value.trim();
