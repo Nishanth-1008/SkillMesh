@@ -293,7 +293,7 @@ router.post('/integrations', requireAuth, (req, res, next) => {
 router.post('/api-keys', requireAuth, (req, res, next) => {
   try {
     const state = getState();
-    const key = `sk_live_${crypto.randomBytes(24).toString('hex')}`;
+    const key = `sm_demo_${crypto.randomBytes(24).toString('hex')}`;
     const row = {
       id: crypto.randomUUID(),
       userId: req.user.id,

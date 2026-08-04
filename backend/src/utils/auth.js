@@ -5,9 +5,10 @@
 // touching call sites.
 
 const crypto = require('crypto');
+const { config } = require('../config');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'skillmesh-dev-secret-change-me';
-const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const JWT_SECRET = config.JWT_SECRET;
+const TOKEN_TTL_SECONDS = config.JWT_TTL_SECONDS;
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');

@@ -4,7 +4,13 @@
 
 const GraphView = {
   colorFor(type) {
-    return { person: '#4da3ff', skill: '#4ce0ff', community: '#b088ff', organization: '#ffb454' }[type] || '#9aa3b8';
+    return {
+      person: '#4da3ff',
+      skill: '#4ce0ff',
+      community: '#b088ff',
+      organization: '#ffb454',
+      project: '#4ce0a0',
+    }[type] || '#9aa3b8';
   },
 
   render(container, data) {
@@ -121,9 +127,11 @@ const GraphView = {
           ${nodeCircles}
         </svg>
         <div class="muted" style="margin-top:10px;">
-          <span class="badge" style="border-color:#4da3ff;color:#4da3ff;">● person (click to reveal skills)</span>
+          <span class="badge" style="border-color:#4da3ff;color:#4da3ff;">● person (click)</span>
           <span class="badge" style="border-color:#4ce0ff;color:#4ce0ff;">● skill</span>
           <span class="badge" style="border-color:#b088ff;color:#b088ff;">● community</span>
+          <span class="badge" style="border-color:#ffb454;color:#ffb454;">● org</span>
+          <span class="badge" style="border-color:#4ce0a0;color:#4ce0a0;">● project</span>
           &nbsp;·&nbsp; ${nodes.length} nodes, ${edges.length} edges
         </div>
         ${skillPopupHtml}`;

@@ -157,6 +157,24 @@ function renderProfile(root, profile, editable) {
     </div>
     ${editable ? `
     <div class="card">
+      <h3>Edit profile</h3>
+      <div id="profile-msg"></div>
+      <label class="muted">Name</label>
+      <input class="input" id="edit-name" value="${(profile.name || '').replace(/"/g, '&quot;')}" />
+      <label class="muted">Location</label>
+      <input class="input" id="edit-location" value="${(profile.location || '').replace(/"/g, '&quot;')}" placeholder="e.g. Greenwood Sector 4" />
+      <label class="muted">Availability</label>
+      <select class="input" id="edit-availability">
+        <option value="available" ${profile.availability === 'available' ? 'selected' : ''}>available</option>
+        <option value="busy" ${profile.availability === 'busy' ? 'selected' : ''}>busy</option>
+      </select>
+      <label class="muted">Bio</label>
+      <textarea class="input" id="edit-bio" rows="2" placeholder="Short bio">${profile.bio || ''}</textarea>
+      <label class="muted">Interests (comma-separated)</label>
+      <input class="input" id="edit-interests" value="${Array.isArray(profile.interests) ? profile.interests.join(', ') : (profile.interests || '')}" />
+      <button class="btn btn-primary" id="save-profile">Save profile</button>
+    </div>
+    <div class="card">
       <h3>Add a skill</h3>
       <div id="msg"></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -188,6 +206,23 @@ function renderProfile(root, profile, editable) {
   `;
 
   if (editable) {
+    root.querySelector('#save-profile').onclick = async () => {
+      const msg = root.querySelector('#profile-msg');
+      const interestsRaw = root.querySelector('#edit-interests').value.trim();
+      try {
+        await Api.updateMyProfile({
+          name: root.querySelector('#edit-name').value.trim(),
+          location: root.querySelector('#edit-location').value.trim(),
+          availability: root.querySelector('#edit-availability').value,
+          bio: root.querySelector('#edit-bio').value.trim(),
+          interests: interestsRaw ? interestsRaw.split(',').map((s) => s.trim()).filter(Boolean) : [],
+        });
+        msg.innerHTML = `<div class="info-box">Profile saved.</div>`;
+        App.navigate('dashboard');
+      } catch (e) {
+        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+      }
+    };
     root.querySelector('#add-skill').onclick = async () => {
       const skill = root.querySelector('#skill-name').value.trim();
       const level = root.querySelector('#skill-level').value;
@@ -316,15 +351,20 @@ Views.community = async function (root, params) {
   root.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading…</div>`;
   try {
     const { community, members } = await Api.getCommunity(params.id);
+    const me = Store.getUser();
+    const myMembership = me && members.find((m) => m.id === me.id);
+    const isOwner = me && community.ownerId === me.id;
     root.innerHTML = `
       <div class="card">
         <h3>${community.name}</h3>
         <p class="muted">${community.description || ''}</p>
         <p class="muted">${community.memberCount} members</p>
         ${Store.isLoggedIn() ? `
-          <button class="btn btn-primary" id="join">Join</button>
+          ${!myMembership ? `<button class="btn btn-primary" id="join">Join</button>` : ''}
+          ${myMembership && !isOwner ? `<button class="btn btn-danger" id="leave">Leave</button>` : ''}
           <button class="btn" id="search-here">AI search here</button>
           <button class="btn" id="team-here">Build team here</button>
+          <button class="btn" id="analytics-here">Community intel</button>
         ` : ''}
       </div>
       <div class="card">
@@ -337,9 +377,18 @@ Views.community = async function (root, params) {
       </div>
     `;
     if (Store.isLoggedIn()) {
-      root.querySelector('#join').onclick = async () => { await Api.joinCommunity(community.id); App.navigate('community', { id: community.id }); };
+      if (root.querySelector('#join')) {
+        root.querySelector('#join').onclick = async () => { await Api.joinCommunity(community.id); App.navigate('community', { id: community.id }); };
+      }
+      if (root.querySelector('#leave')) {
+        root.querySelector('#leave').onclick = async () => {
+          await Api.leaveCommunity(community.id);
+          App.navigate('communities');
+        };
+      }
       root.querySelector('#search-here').onclick = () => App.navigate('search', { communityId: community.id });
       root.querySelector('#team-here').onclick = () => App.navigate('teams', { communityId: community.id });
+      root.querySelector('#analytics-here').onclick = () => App.navigate('analytics');
     }
     root.querySelectorAll('[data-profile]').forEach((el) => {
       el.onclick = () => App.navigate('profile', { id: el.getAttribute('data-profile') });
@@ -802,6 +851,8 @@ Views.opportunity = async function (root, params) {
   root.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading…</div>`;
   try {
     const { opportunity, applications } = await Api.getOpportunity(params.id);
+    const me = Store.getUser();
+    const isCreator = me && opportunity.creatorId === me.id;
     root.innerHTML = `
       <div class="card">
         <span class="badge">${opportunity.type}</span>
@@ -809,7 +860,7 @@ Views.opportunity = async function (root, params) {
         <p class="muted">${opportunity.description || ''}</p>
         <p class="muted">By ${opportunity.creator ? opportunity.creator.name : '—'} · ${opportunity.status}</p>
         <div>${(opportunity.skillsNeeded || []).map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ')}</div>
-        ${Store.isLoggedIn() && opportunity.status === 'open' ? `<button class="btn btn-primary" id="apply" style="margin-top:12px;">Apply</button>` : ''}
+        ${Store.isLoggedIn() && opportunity.status === 'open' && !isCreator ? `<button class="btn btn-primary" id="apply" style="margin-top:12px;">Apply</button>` : ''}
       </div>
       <div class="card">
         <h3>Applicants (${applications.length})</h3>
@@ -821,6 +872,10 @@ Views.opportunity = async function (root, params) {
                 <p class="muted">${a.status} · trust ${a.trustScore}${a.message ? ` · "${a.message}"` : ''}</p>
               </div>
             </div>
+            ${isCreator && a.status === 'pending' ? `
+              <button class="btn btn-primary" data-accept="${a.id}">Accept</button>
+              <button class="btn" data-reject="${a.id}">Reject</button>
+            ` : ''}
           </div>
         `).join('') || '<p class="muted">No applicants yet.</p>'}
       </div>
@@ -831,6 +886,18 @@ Views.opportunity = async function (root, params) {
         App.navigate('opportunity', { id: opportunity.id });
       };
     }
+    root.querySelectorAll('[data-accept]').forEach((btn) => {
+      btn.onclick = async () => {
+        await Api.decideOpportunity(opportunity.id, { applicationId: btn.getAttribute('data-accept'), accept: true });
+        App.navigate('opportunity', { id: opportunity.id });
+      };
+    });
+    root.querySelectorAll('[data-reject]').forEach((btn) => {
+      btn.onclick = async () => {
+        await Api.decideOpportunity(opportunity.id, { applicationId: btn.getAttribute('data-reject'), accept: false });
+        App.navigate('opportunity', { id: opportunity.id });
+      };
+    });
   } catch (e) {
     root.innerHTML = `<div class="error-box">${e.message}</div>`;
   }

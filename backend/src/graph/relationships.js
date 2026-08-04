@@ -23,6 +23,18 @@ function addRelationship(state, { fromType, fromId, toType, toId, kind, weight =
   return rel;
 }
 
+function removeRelationship(state, { fromType, fromId, toType, toId, kind }) {
+  const before = state.relationships.length;
+  state.relationships = state.relationships.filter(
+    (r) => !(
+      r.fromType === fromType && r.fromId === fromId &&
+      r.toType === toType && r.toId === toId &&
+      (!kind || r.kind === kind)
+    )
+  );
+  return before - state.relationships.length;
+}
+
 // Build a graph payload { nodes, edges } for visualization, optionally
 // scoped to a single community so the frontend doesn't have to render the
 // entire mesh at once.
@@ -52,8 +64,13 @@ function buildGraph(state, { communityId } = {}) {
     if (communityId && community.id !== communityId) continue;
     addNode('community', community.id, community.name);
   }
-  for (const skill of state.skills) {
-    addNode('skill', skill.id, skill.name);
+
+  // Only include skills held by people already in the graph (avoids orphan skill nodes)
+  for (const us of state.userSkills) {
+    if (memberIds && !memberIds.has(us.userId)) continue;
+    if (!nodeIds.has(`person:${us.userId}`)) continue;
+    const skill = state.skills.find((s) => s.id === us.skillId);
+    if (skill) addNode('skill', skill.id, skill.name);
   }
 
   // Phase 2 nodes
@@ -81,4 +98,4 @@ function buildGraph(state, { communityId } = {}) {
   return { nodes, edges };
 }
 
-module.exports = { addRelationship, buildGraph };
+module.exports = { addRelationship, removeRelationship, buildGraph };
