@@ -644,13 +644,14 @@ let state = null;
 let writeQueued = false;
 let persistInFlight = null;
 
+const JSON_DB_PATH = path.join(__dirname, '..', 'data', 'db.json');
+const usePostgres = !!(config.DATABASE_URL || config.PGHOST);
+
 function getPool() {
+  if (!usePostgres) {
+    return null;
+  }
   if (!pool) {
-    if (!config.DATABASE_URL && !config.PGHOST) {
-      throw new Error(
-        'DATABASE_URL is not set. Copy .env.example to .env and add your Neon Postgres connection string.'
-      );
-    }
     pool = new Pool(pgPoolConfig());
     pool.on('error', (err) => console.error('[db] pool error', err.message));
   }
@@ -658,12 +659,35 @@ function getPool() {
 }
 
 async function migrate() {
+  if (!usePostgres) {
+    const dir = path.dirname(JSON_DB_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    console.log('[db] JSON store folder verified');
+    return;
+  }
   const sql = fs.readFileSync(SCHEMA_PATH, 'utf8');
   await getPool().query(sql);
   console.log('[db] schema applied');
 }
 
 async function hydrate() {
+  if (!usePostgres) {
+    if (fs.existsSync(JSON_DB_PATH)) {
+      try {
+        state = JSON.parse(fs.readFileSync(JSON_DB_PATH, 'utf8'));
+        console.log('[db] hydrated state from JSON file');
+      } catch (err) {
+        console.error('[db] error parsing db.json, starting with empty state:', err.message);
+        state = emptyState();
+      }
+    } else {
+      state = emptyState();
+    }
+    return state;
+  }
+
   const p = getPool();
   const next = emptyState();
   for (const [key, meta] of Object.entries(COLLECTIONS)) {
@@ -676,6 +700,16 @@ async function hydrate() {
 
 async function persist() {
   if (!state) return;
+  if (!usePostgres) {
+    try {
+      fs.writeFileSync(JSON_DB_PATH, JSON.stringify(state, null, 2), 'utf8');
+    } catch (err) {
+      console.error('[db] failed to write JSON file:', err.message);
+      throw err;
+    }
+    return;
+  }
+
   if (persistInFlight) return persistInFlight;
 
   persistInFlight = (async () => {
@@ -715,7 +749,7 @@ async function persist() {
 async function load() {
   await migrate();
   await hydrate();
-  console.log(`[db] loaded from Postgres (${config.DATABASE_URL ? 'DATABASE_URL' : 'PG*'})`);
+  console.log(`[db] loaded from ${usePostgres ? 'Postgres' : 'JSON file'}`);
   return state;
 }
 
@@ -736,6 +770,12 @@ function getState() {
 }
 
 async function resetAllData() {
+  if (!usePostgres) {
+    state = emptyState();
+    await persist();
+    return state;
+  }
+
   const p = getPool();
   const client = await p.connect();
   try {
@@ -773,5 +813,5 @@ module.exports = {
   emptyState,
   getPool,
   // legacy name kept so old seed imports don't explode during transition
-  DB_FILE: null,
+  DB_FILE: JSON_DB_PATH,
 };

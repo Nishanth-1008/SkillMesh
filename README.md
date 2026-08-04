@@ -16,6 +16,7 @@ Phases 1–6 exist as a **runnable demo** (APIs + SPA) backed by **Postgres** (N
 | 6 Autonomy | Demo rule-agents — twin, memory, OS pulse (not true autonomous agents) |
 
 **Use it:** [`documentation/usage_guide.md`](documentation/usage_guide.md)  
+**Test all features:** [`documentation/feature_testing_guide.md`](documentation/feature_testing_guide.md)  
 **Make it crazy good:** [`documentation/next_steps.md`](documentation/next_steps.md)
 
 ## How to run

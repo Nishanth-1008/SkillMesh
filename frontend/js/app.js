@@ -32,7 +32,12 @@ const App = {
 
   navigate(route, params = {}) {
     const query = new URLSearchParams(params).toString();
-    window.location.hash = `#${route}${query ? `?${query}` : ''}`;
+    const targetHash = `#${route}${query ? `?${query}` : ''}`;
+    if (window.location.hash === targetHash) {
+      this.render();
+    } else {
+      window.location.hash = targetHash;
+    }
   },
 
   parseHash() {
@@ -540,8 +545,13 @@ const App = {
   },
 
   openModal(contentHtml, title = 'Modal') {
-    const container = document.getElementById('modal-container');
-    if (!container) return;
+    let container = document.getElementById('modal-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'modal-container';
+      container.className = 'modal-container hidden';
+      document.body.appendChild(container);
+    }
 
     container.innerHTML = `
       <div class="modal-card">
