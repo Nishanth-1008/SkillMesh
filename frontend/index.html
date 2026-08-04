@@ -13,12 +13,76 @@
       <div class="topnav-left">
         <a href="#home" class="brand" style="text-decoration: none; color: inherit;">
           <span class="brand-mark">✦</span>
-          <span>SkillMesh</span>
+          <span class="brand-text">SkillMesh</span>
         </a>
         <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle sidebar">
           <span class="hamburger-icon">≡</span>
-          <span class="sidebar-toggle-text">Menu</span>
         </button>
+        <div id="breadcrumb" class="breadcrumb-container"></div>
+      </div>
+
+      <div class="topnav-center">
+        <div id="global-search-container" class="global-search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="global-search-input" class="global-search-input" placeholder="Search people, teams, skills, communities..." autocomplete="off" />
+          <div id="global-search-results" class="search-results-dropdown hidden"></div>
+        </div>
+      </div>
+
+      <div class="topnav-right">
+        <button id="theme-toggle" class="nav-icon-btn" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+
+        <div id="quick-actions-wrapper" class="nav-dropdown-wrapper">
+          <button id="quick-action-btn" class="btn btn-primary btn-sm quick-action-btn">
+            <span>+ Quick Action</span>
+            <span class="chevron">▾</span>
+          </button>
+          <div id="quick-action-dropdown" class="nav-dropdown hidden">
+            <button class="dropdown-item" id="qa-create-community">➕ Create Community</button>
+            <button class="dropdown-item" id="qa-assemble-team">👥 Assemble Team</button>
+            <button class="dropdown-item" id="qa-invite-members">📩 Invite Members</button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item" id="qa-log-impact">🌱 Log Impact</button>
+          </div>
+        </div>
+
+        <div id="notif-bell-wrapper" class="nav-dropdown-wrapper">
+          <button id="notif-bell-btn" class="nav-icon-btn notif-bell-btn" title="Notifications" aria-label="Notifications">
+            <span>🔔</span>
+            <span id="notif-badge" class="notif-badge hidden">0</span>
+          </button>
+          <div id="notif-dropdown" class="nav-dropdown notif-dropdown hidden">
+            <div class="notif-dropdown-header">
+              <strong>Notifications</strong>
+              <button id="notif-mark-all-fast" class="btn-text">Mark all read</button>
+            </div>
+            <div id="notif-dropdown-list" class="notif-dropdown-list">
+              <div class="muted-small p-2">Loading alerts...</div>
+            </div>
+            <div class="notif-dropdown-footer">
+              <button id="go-inbox-btn" class="btn-link">Go to Inbox & Notifications →</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="user-profile-wrapper" class="nav-dropdown-wrapper">
+          <button id="user-profile-btn" class="user-profile-btn" title="Account Menu">
+            <span id="user-avatar-chip" class="avatar-chip">👤</span>
+            <span id="user-name-label" class="user-name-label">Account</span>
+            <span class="chevron">▾</span>
+          </button>
+          <div id="user-profile-dropdown" class="nav-dropdown profile-dropdown hidden">
+            <div id="profile-menu-header" class="profile-menu-header"></div>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item" id="pm-dashboard">👤 My Profile</button>
+            <button class="dropdown-item" id="pm-messages">📥 Inbox & Alerts</button>
+            <button class="dropdown-item" id="pm-status-toggle">🟢 Status: <span id="user-status-text">Available</span></button>
+            <div class="dropdown-divider"></div>
+            <div id="pm-auth-action"></div>
+          </div>
+        </div>
       </div>
     </nav>
 
@@ -35,6 +99,10 @@
       <span>SkillMesh — Phases 1–6 · Autonomous Community Intelligence</span>
     </footer>
   </div>
+
+  <!-- Global Modal & Toast Containers -->
+  <div id="modal-container" class="modal-container hidden"></div>
+  <div id="toast-container" class="toast-container"></div>
 
   <script src="js/api.js"></script>
   <script src="js/state.js"></script>

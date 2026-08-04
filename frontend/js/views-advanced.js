@@ -321,15 +321,18 @@ Views.intelligence = async function (root) {
         <div id="reason-out"></div>
       </div>
       <div class="card">
-        <h3>Impact &amp; SDG</h3>
-        <p class="muted">Resilience score ${impact.communityResilienceScore}/100 · ${impact.totalRecords} records</p>
-        <div>${(impact.bySdg || []).map((s) => `<span class="badge">SDG ${s.sdg}: ${s.value}</span>`).join(' ')}</div>
+        <h3>Impact &amp; SDG Module</h3>
+        <p class="muted">Resilience score <strong id="resilience-score">${impact.communityResilienceScore}</strong>/100 · <span id="total-impact-records">${impact.totalRecords}</span> records logged</p>
+        <div id="sdg-badges-container">${(impact.bySdg || []).map((s) => `<span class="badge badge-matched">SDG ${s.sdg}: ${s.value}</span>`).join(' ')}</div>
         ${Store.isLoggedIn() ? `
           <hr class="divider" />
-          <input class="input" id="metric" placeholder="Metric e.g. people_helped" />
-          <input class="input" id="value" type="number" placeholder="Value" />
-          <button class="btn" id="log-impact">Log impact</button>
-        ` : ''}
+          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+            <input class="input" id="metric" placeholder="Metric e.g. people_helped" style="flex:1; min-width:180px; margin-bottom:0;" />
+            <input class="input" id="value" type="number" placeholder="Value" style="width:100px; margin-bottom:0;" value="1" min="1" />
+            <button class="btn btn-primary" id="log-impact">🌱 Log Impact</button>
+            <button class="btn" id="open-impact-modal">📋 Full Impact Logger</button>
+          </div>
+        ` : '<p class="muted" style="margin-top:10px;">Log in to contribute impact records.</p>'}
       </div>
       <div class="card">
         <h3>Skill Passport</h3>
@@ -375,14 +378,49 @@ Views.intelligence = async function (root) {
           </div>`;
       };
     }
+    
+    // Task 3: Log Impact Button Bug Fix & Interactivity
     if (root.querySelector('#log-impact')) {
-      root.querySelector('#log-impact').onclick = async () => {
-        await Api.recordImpact({
-          metric: root.querySelector('#metric').value.trim() || 'people_helped',
-          value: Number(root.querySelector('#value').value) || 1,
-          tags: ['community'],
-        });
-        App.navigate('intelligence');
+      const logBtn = root.querySelector('#log-impact');
+      logBtn.onclick = async (e) => {
+        e.preventDefault();
+        const metric = root.querySelector('#metric').value.trim() || 'people_helped';
+        const val = Number(root.querySelector('#value').value) || 1;
+
+        // 1. Show loading spinner on button to stop double taps & disable
+        logBtn.disabled = true;
+        logBtn.innerHTML = `<span class="spinner"></span> Logging...`;
+
+        try {
+          await Api.recordImpact({
+            metric,
+            value: val,
+            tags: ['community', 'SDG_13'],
+          });
+
+          // 2. Real-time SDG metric update
+          const updatedImpact = await Api.impact();
+          const recEl = root.querySelector('#total-impact-records');
+          if (recEl) recEl.textContent = updatedImpact.totalRecords;
+          const badgesEl = root.querySelector('#sdg-badges-container');
+          if (badgesEl && updatedImpact.bySdg) {
+            badgesEl.innerHTML = updatedImpact.bySdg.map((s) => `<span class="badge badge-matched">SDG ${s.sdg}: ${s.value}</span>`).join(' ');
+          }
+
+          // 3. Success Toast
+          App.showToast('Impact logged successfully!');
+        } catch (err) {
+          App.showToast(`Failed to log impact: ${err.message || 'Error'}`);
+        } finally {
+          logBtn.disabled = false;
+          logBtn.innerHTML = `🌱 Log Impact`;
+        }
+      };
+    }
+
+    if (root.querySelector('#open-impact-modal')) {
+      root.querySelector('#open-impact-modal').onclick = () => {
+        App.openImpactModal();
       };
     }
     if (root.querySelector('#scen')) {

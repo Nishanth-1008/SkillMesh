@@ -842,69 +842,377 @@ Views.messages = async function (root) {
     root.innerHTML = `<div class="error-box">Log in to view messages and notifications.</div>`;
     return;
   }
-  root.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading…</div>`;
+  root.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading inbox & notifications…</div>`;
+
   try {
     const [{ notifications, unread }, { messages }, { activity }] = await Promise.all([
       Api.notifications(),
       Api.inbox(),
       Api.activity(),
     ]);
-    root.innerHTML = `
-      <div class="card">
-        <h3>Notifications ${unread ? `<span class="badge badge-urgent">${unread} unread</span>` : ''}</h3>
-        ${notifications.length ? `<button class="btn" id="mark-read">Mark all read</button>` : ''}
-        ${notifications.map((n) => `
-          <div class="msg-row ${n.read ? '' : 'unread'}">
-            <strong>${n.title}</strong>
-            <p class="muted">${n.body || ''}</p>
-            <p class="muted" style="font-size:12px;">${new Date(n.createdAt).toLocaleString()}</p>
-          </div>
-        `).join('') || '<p class="muted">No notifications.</p>'}
-      </div>
-      <div class="card">
-        <h3>Inbox</h3>
-        ${messages.map((m) => `
-          <div class="msg-row">
-            <strong>${m.from ? m.from.name : '?'} ${m.to ? `→ ${m.to.name}` : m.projectId ? '(project)' : ''}</strong>
-            ${m.announcement ? '<span class="badge badge-urgent">announcement</span>' : ''}
-            <p>${m.body}</p>
-            <p class="muted" style="font-size:12px;">${new Date(m.createdAt).toLocaleString()}</p>
-          </div>
-        `).join('') || '<p class="muted">No messages yet.</p>'}
-        <hr class="divider" />
-        <h3>Send a DM</h3>
-        <div id="dm-msg"></div>
-        <input class="input" id="dm-to" placeholder="Recipient user ID" />
-        <textarea class="input" id="dm-body" rows="2" placeholder="Message"></textarea>
-        <button class="btn btn-primary" id="dm-send">Send</button>
-      </div>
-      <div class="card">
-        <h3>Activity feed</h3>
-        ${activity.map((a) => `
-          <div class="msg-row">
-            <p>${a.summary}</p>
-            <p class="muted" style="font-size:12px;">${new Date(a.createdAt).toLocaleString()}</p>
-          </div>
-        `).join('') || '<p class="muted">No recent activity.</p>'}
-      </div>
-    `;
-    if (root.querySelector('#mark-read')) {
-      root.querySelector('#mark-read').onclick = async () => {
-        await Api.markNotificationsRead({ all: true });
-        App.navigate('messages');
+
+    // Helper: Relative time formatter
+    const formatRelativeTime = (dateInput) => {
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return 'Recently';
+      const now = new Date();
+      const diffMs = now - d;
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return d.toLocaleDateString();
+    };
+
+    // Helper: Time Group Header assignment (Today, Yesterday, Earlier This Week)
+    const getTimeGroupHeader = (dateInput) => {
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return 'Today';
+      const now = new Date();
+      const isToday = d.toDateString() === now.toDateString();
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      const isYesterday = d.toDateString() === yesterday.toDateString();
+
+      if (isToday) return 'Today';
+      if (isYesterday) return 'Yesterday';
+      return 'Earlier This Week';
+    };
+
+    // Normalizing all items into unified inbox cards with tab categories
+    let allInboxItems = [];
+
+    // 1. Direct Messages & Team Invites -> Primary
+    messages.forEach((m) => {
+      const senderName = m.from ? m.from.name : 'System';
+      allInboxItems.push({
+        id: `msg-${m.id}`,
+        type: 'message',
+        category: 'primary', // Primary / Direct
+        sender: senderName,
+        avatar: senderName.charAt(0).toUpperCase(),
+        title: m.from ? `Message from ${senderName}` : 'Direct Message',
+        preview: m.body || '',
+        createdAt: m.createdAt || new Date(),
+        read: true,
+        starred: false,
+        raw: m,
+      });
+    });
+
+    // 2. Notifications & System Announcements -> Updates
+    notifications.forEach((n) => {
+      const isAnnouncement = n.title && n.title.toLowerCase().includes('announcement');
+      allInboxItems.push({
+        id: `notif-${n.id}`,
+        type: 'notification',
+        category: isAnnouncement ? 'updates' : 'updates', // Updates / Announcements
+        sender: isAnnouncement ? '📢 System' : '🔔 Alert',
+        avatar: isAnnouncement ? '📢' : '🔔',
+        title: n.title || 'System Notification',
+        preview: n.body || '',
+        createdAt: n.createdAt || new Date(),
+        read: !!n.read,
+        starred: false,
+        raw: n,
+      });
+    });
+
+    // 3. Activity Feed, Endorsements, Community Alerts -> Social
+    activity.forEach((a) => {
+      allInboxItems.push({
+        id: `act-${a.id}`,
+        type: 'activity',
+        category: 'social', // Promotions / Social
+        sender: '🌱 Community',
+        avatar: '🤝',
+        title: 'Community Activity & Social',
+        preview: a.summary || '',
+        createdAt: a.createdAt || new Date(),
+        read: true,
+        starred: false,
+        raw: a,
+      });
+    });
+
+    // Default tab state & active filters
+    let currentTab = 'primary'; // 'primary', 'updates', 'social'
+    let currentFilter = 'all'; // 'all', 'unread', 'starred'
+    let searchQuery = '';
+    let selectedItemIds = new Set();
+
+    const renderInbox = () => {
+      // Filter by active category tab
+      let items = allInboxItems.filter((item) => item.category === currentTab);
+
+      // Filter by quick chip (All, Unread, Starred)
+      if (currentFilter === 'unread') {
+        items = items.filter((item) => !item.read);
+      } else if (currentFilter === 'starred') {
+        items = items.filter((item) => item.starred);
+      }
+
+      // Filter by keyword search query
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        items = items.filter((item) =>
+          item.title.toLowerCase().includes(q) ||
+          item.preview.toLowerCase().includes(q) ||
+          item.sender.toLowerCase().includes(q)
+        );
+      }
+
+      // Calculate tab counts
+      const primaryCount = allInboxItems.filter((i) => i.category === 'primary' && !i.read).length;
+      const updatesCount = allInboxItems.filter((i) => i.category === 'updates' && !i.read).length;
+      const socialCount = allInboxItems.filter((i) => i.category === 'social' && !i.read).length;
+
+      // Group items by time blocks: Today, Yesterday, Earlier This Week
+      const timeGroups = {
+        'Today': [],
+        'Yesterday': [],
+        'Earlier This Week': [],
       };
-    }
-    root.querySelector('#dm-send').onclick = async () => {
-      const toUserId = root.querySelector('#dm-to').value.trim();
-      const body = root.querySelector('#dm-body').value.trim();
-      const msg = root.querySelector('#dm-msg');
-      try {
-        await Api.sendMessage({ toUserId, body });
-        App.navigate('messages');
-      } catch (e) {
-        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+
+      items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      items.forEach((item) => {
+        const group = getTimeGroupHeader(item.createdAt);
+        timeGroups[group].push(item);
+      });
+
+      const unreadTotal = allInboxItems.filter((i) => !i.read).length;
+
+      root.innerHTML = `
+        <div class="card">
+          <div class="inbox-header-bar">
+            <div>
+              <h2 style="margin:0;">Inbox & Notifications ${unreadTotal ? `<span class="badge badge-urgent">${unreadTotal} unread</span>` : ''}</h2>
+              <p class="muted" style="margin:4px 0 0;">Manage direct communications, system announcements, and community activity.</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button class="btn btn-primary" id="mark-all-read-cta">✓ Mark All as Read</button>
+            </div>
+          </div>
+
+          <!-- 1. Dedicated Tabs: Primary, Updates, Social -->
+          <div class="inbox-tabs">
+            <button class="inbox-tab ${currentTab === 'primary' ? 'active' : ''}" data-tab="primary">
+              💬 Primary ${primaryCount ? `<span class="badge badge-urgent">${primaryCount}</span>` : ''}
+            </button>
+            <button class="inbox-tab ${currentTab === 'updates' ? 'active' : ''}" data-tab="updates">
+              📢 Updates ${updatesCount ? `<span class="badge badge-urgent">${updatesCount}</span>` : ''}
+            </button>
+            <button class="inbox-tab ${currentTab === 'social' ? 'active' : ''}" data-tab="social">
+              🤝 Social & Promo ${socialCount ? `<span class="badge badge-urgent">${socialCount}</span>` : ''}
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Quick Actions & Filtering Bar -->
+        <div class="inbox-filter-bar">
+          <div class="filter-chips">
+            <button class="filter-chip ${currentFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>
+            <button class="filter-chip ${currentFilter === 'unread' ? 'active' : ''}" data-filter="unread">Unread</button>
+            <button class="filter-chip ${currentFilter === 'starred' ? 'active' : ''}" data-filter="starred">⭐ Starred</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <input type="text" class="input inbox-search-input" id="inbox-search" placeholder="🔍 Search messages..." value="${searchQuery}" />
+          </div>
+        </div>
+
+        ${selectedItemIds.size > 0 ? `
+          <div class="bulk-actions-bar">
+            <span><strong>${selectedItemIds.size}</strong> items selected</span>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-sm" id="bulk-mark-read">Mark Selected Read</button>
+              <button class="btn btn-sm btn-danger" id="bulk-clear">Clear Selected</button>
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- 3. Time Grouped Notification Stream -->
+        <div id="inbox-stream">
+          ${Object.keys(timeGroups).map((groupName) => {
+            const groupItems = timeGroups[groupName];
+            if (!groupItems.length) return '';
+            return `
+              <div class="inbox-time-group">
+                <div class="time-group-header">${groupName}</div>
+                ${groupItems.map((item) => `
+                  <!-- Standardized Visual Card Template -->
+                  <div class="inbox-card ${item.read ? '' : 'unread'}" data-id="${item.id}">
+                    <input type="checkbox" class="inbox-checkbox" data-cb="${item.id}" ${selectedItemIds.has(item.id) ? 'checked' : ''} style="cursor:pointer;" />
+                    
+                    <!-- Left: Sender Icon / Avatar -->
+                    <div class="card-sender-icon">${item.avatar}</div>
+                    
+                    <!-- Center: Subject & 1-line Text Preview -->
+                    <div class="card-center-content">
+                      <div class="card-title">
+                        ${!item.read ? '<span class="unread-indicator-dot" title="Unread"></span>' : ''}
+                        <span>${item.title}</span>
+                        ${item.starred ? '<span style="color:var(--amber);">⭐</span>' : ''}
+                      </div>
+                      <p class="card-preview">${item.preview || 'No text preview available.'}</p>
+                    </div>
+
+                    <!-- Top Right: Relative Timestamp & Hover Action Bar -->
+                    <div class="card-top-right">
+                      <span class="card-timestamp">${formatRelativeTime(item.createdAt)}</span>
+                      <div class="card-action-bar">
+                        <button class="card-action-btn" data-act="star" data-id="${item.id}" title="Star/Unstar">${item.starred ? '★' : '☆'}</button>
+                        <button class="card-action-btn" data-act="read" data-id="${item.id}" title="${item.read ? 'Mark Unread' : 'Mark Read'}">${item.read ? '✉️' : '📩'}</button>
+                        <button class="card-action-btn" data-act="delete" data-id="${item.id}" title="Delete/Archive">🗑️</button>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `;
+          }).join('') || `<div class="card"><p class="muted">No messages found in this category view.</p></div>`}
+        </div>
+
+        <!-- DM Direct Composer -->
+        <div class="card" style="margin-top:24px;">
+          <h3>Send Direct Message</h3>
+          <div id="dm-msg"></div>
+          <div class="field-row" style="margin-bottom:12px;">
+            <input class="input" id="dm-to" placeholder="Recipient User ID e.g. 1" />
+          </div>
+          <textarea class="input" id="dm-body" rows="2" placeholder="Write your message here..."></textarea>
+          <button class="btn btn-primary" id="dm-send">Send Direct Message</button>
+        </div>
+      `;
+
+      // Event Binding for Tabs
+      root.querySelectorAll('.inbox-tab').forEach((tabBtn) => {
+        tabBtn.onclick = () => {
+          currentTab = tabBtn.getAttribute('data-tab');
+          renderInbox();
+        };
+      });
+
+      // Event Binding for Filters
+      root.querySelectorAll('.filter-chip').forEach((chipBtn) => {
+        chipBtn.onclick = () => {
+          currentFilter = chipBtn.getAttribute('data-filter');
+          renderInbox();
+        };
+      });
+
+      // Event Binding for Search
+      const searchEl = root.querySelector('#inbox-search');
+      if (searchEl) {
+        searchEl.oninput = (e) => {
+          searchQuery = e.target.value;
+          renderInbox();
+          // Maintain focus
+          const updatedSearch = root.querySelector('#inbox-search');
+          if (updatedSearch) {
+            updatedSearch.focus();
+            updatedSearch.setSelectionRange(searchQuery.length, searchQuery.length);
+          }
+        };
+      }
+
+      // Event Binding for Checkboxes & Bulk Selection
+      root.querySelectorAll('.inbox-checkbox').forEach((cb) => {
+        cb.onclick = (e) => {
+          e.stopPropagation();
+          const id = cb.getAttribute('data-cb');
+          if (cb.checked) {
+            selectedItemIds.add(id);
+          } else {
+            selectedItemIds.delete(id);
+          }
+          renderInbox();
+        };
+      });
+
+      // Bulk Action Listeners
+      if (root.querySelector('#bulk-mark-read')) {
+        root.querySelector('#bulk-mark-read').onclick = () => {
+          allInboxItems.forEach((i) => {
+            if (selectedItemIds.has(i.id)) i.read = true;
+          });
+          selectedItemIds.clear();
+          App.showToast('Selected items marked as read');
+          renderInbox();
+        };
+      }
+      if (root.querySelector('#bulk-clear')) {
+        root.querySelector('#bulk-clear').onclick = () => {
+          allInboxItems = allInboxItems.filter((i) => !selectedItemIds.has(i.id));
+          selectedItemIds.clear();
+          App.showToast('Selected items cleared');
+          renderInbox();
+        };
+      }
+
+      // Hover Card Action Listeners (Star, Read, Delete)
+      root.querySelectorAll('[data-act]').forEach((btn) => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const act = btn.getAttribute('data-act');
+          const id = btn.getAttribute('data-id');
+          const targetItem = allInboxItems.find((i) => i.id === id);
+
+          if (targetItem) {
+            if (act === 'star') {
+              targetItem.starred = !targetItem.starred;
+            } else if (act === 'read') {
+              targetItem.read = !targetItem.read;
+            } else if (act === 'delete') {
+              allInboxItems = allInboxItems.filter((i) => i.id !== id);
+              App.showToast('Item deleted');
+            }
+            renderInbox();
+          }
+        };
+      });
+
+      // Task 2: "Mark All as Read" & Notification Bar Sync CTA
+      const markAllBtn = root.querySelector('#mark-all-read-cta');
+      if (markAllBtn) {
+        markAllBtn.onclick = async () => {
+          // Immediately convert active in-app indicators to read state
+          allInboxItems.forEach((i) => (i.read = true));
+
+          // Trigger OS native API to clear notifications from phone top bar and show Toast with 2s Undo
+          await App.markAllNotificationsReadWithUndo();
+
+          renderInbox();
+        };
+      }
+
+      // DM Composer Listener
+      const dmSendBtn = root.querySelector('#dm-send');
+      if (dmSendBtn) {
+        dmSendBtn.onclick = async () => {
+          const toUserId = root.querySelector('#dm-to').value.trim();
+          const body = root.querySelector('#dm-body').value.trim();
+          const msg = root.querySelector('#dm-msg');
+          if (!toUserId || !body) {
+            msg.innerHTML = `<div class="error-box">Please provide recipient ID and message text.</div>`;
+            return;
+          }
+          try {
+            await Api.sendMessage({ toUserId, body });
+            App.showToast('Message sent successfully!');
+            App.navigate('messages');
+          } catch (e) {
+            msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+          }
+        };
       }
     };
+
+    renderInbox();
   } catch (e) {
     root.innerHTML = `<div class="error-box">${e.message}</div>`;
   }
