@@ -1,18 +1,19 @@
-// Seeds a demo community so SkillMesh Phase 1+2 can be evaluated end-to-end
-// immediately without manual signup first. Safe to re-run: wipes and rebuilds data/db.json.
+// Seeds demo data into Postgres. Safe to re-run: wipes all tables then rebuilds.
+//
+//   npm run db:migrate && npm run seed
+//
+// Requires DATABASE_URL (see .env.example / Neon).
 
-const fs = require('fs');
 const crypto = require('crypto');
-const { DB_FILE } = require('./db');
+const { load, getState, persist, resetAllData, close } = require('./db');
 const { hashPassword } = require('./utils/auth');
 
-if (fs.existsSync(DB_FILE)) fs.unlinkSync(DB_FILE);
-
-const { load, getState, persist } = require('./db');
-load();
-const state = getState();
-const { addRelationship } = require('./graph/relationships');
-const { recordContribution } = require('./services/trust');
+async function runSeed({ quiet } = {}) {
+  await load();
+  await resetAllData();
+  const state = getState();
+  const { addRelationship } = require('./graph/relationships');
+  const { recordContribution } = require('./services/trust');
 
 function makeUser({ name, email, location, availability, skills }) {
   const { salt, hash } = hashPassword('password123');
@@ -344,13 +345,86 @@ state.plugins.push({
   installedBy: raj.id,
 });
 
-persist();
 
-console.log('[SkillMesh] Seed complete (Phases 1–6).');
-console.log(`Community: ${community.name} (${community.id})`);
-console.log(`Federation partner: ${riverside.name} (${riverside.id})`);
-console.log(`Project: ${project.title}`);
-console.log(`Organization: ${ngo.name}`);
-console.log(`Event: ${event.title}`);
-console.log('Demo login (any of these, password: password123):');
-for (const u of [raj, sneha, arjun, priya, kabir]) console.log(`  - ${u.email}`);
+  // Extra demo fixtures for Phase 4–5 surfaces
+  const { createEmergency } = require('./services/ecosystem');
+  const activeEmergency = createEmergency(state, {
+    communityId: community.id,
+    title: 'Street flooding — need first aid and plumbing help',
+    severity: 'high',
+    skillsNeeded: ['first aid', 'plumbing'],
+    location: 'Greenwood Sector 1',
+    creatorId: priya.id,
+  });
+  for (const r of activeEmergency.recommendedResponders.slice(0, 2)) {
+    state.notifications.push({
+      id: crypto.randomUUID(),
+      userId: r.user.id,
+      type: 'emergency',
+      title: `EMERGENCY: ${activeEmergency.emergency.title}`,
+      body: `Matched: ${r.matchedSkills.join(', ')}. ETA ~${r.etaMinutes}m.`,
+      link: '#emergency',
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  state.researchDatasets.push({
+    id: crypto.randomUUID(),
+    title: 'Greenwood skill distribution (open)',
+    description: 'Anonymized skill holder counts for community research.',
+    open: true,
+    records: state.skills.map((sk) => ({
+      skill: sk.name,
+      holders: state.userSkills.filter((us) => us.skillId === sk.id).length,
+    })),
+    createdAt: new Date().toISOString(),
+    createdBy: raj.id,
+  });
+
+  state.webhooks.push({
+    id: crypto.randomUUID(),
+    ownerId: raj.id,
+    url: 'https://example.com/hooks/skillmesh',
+    events: ['project.created', 'emergency.opened', 'opportunity.posted'],
+    secret: crypto.randomBytes(16).toString('hex'),
+    active: true,
+    createdAt: new Date().toISOString(),
+  });
+  state.apiKeys.push({
+    id: crypto.randomUUID(),
+    userId: raj.id,
+    key: `sm_demo_${crypto.randomBytes(24).toString('hex')}`,
+    name: 'demo-key',
+    scopes: ['read', 'search'],
+    createdAt: new Date().toISOString(),
+    lastUsedAt: null,
+  });
+
+  await persist();
+
+  if (!quiet) {
+    console.log('[SkillMesh] Seed complete (Phases 1–6) → Postgres');
+    console.log(`Community: ${community.name} (${community.id})`);
+    console.log(`Federation partner: ${riverside.name} (${riverside.id})`);
+    console.log(`Project: ${project.title}`);
+    console.log(`Organization: ${ngo.name}`);
+    console.log(`Event: ${event.title}`);
+    console.log(`Active emergency: ${activeEmergency.emergency.title}`);
+    console.log('Demo login (password: password123):');
+    for (const u of [raj, sneha, arjun, priya, kabir]) console.log(`  - ${u.email}`);
+  }
+  return { communityId: community.id };
+}
+
+if (require.main === module) {
+  runSeed()
+    .then(() => close())
+    .then(() => process.exit(0))
+    .catch((e) => {
+      console.error('[seed] failed:', e);
+      process.exit(1);
+    });
+}
+
+module.exports = { runSeed };

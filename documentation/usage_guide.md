@@ -8,26 +8,57 @@ How to run and use SkillMesh across **Phases 1–6**.
 
 | Phase | Name | Status |
 |---|---|---|
-| 1 | Foundation | Done |
-| 2 | Intelligent Collaboration | Done |
-| 3 | Community Intelligence | Done |
-| 4 | Community Ecosystem | Done |
-| 5 | Global Intelligence | Done |
-| 6 | Autonomous Community Intelligence | Done |
+| 1 | Foundation | Demo-complete (heuristic AI) |
+| 2 | Intelligent Collaboration | Demo-complete |
+| 3 | Community Intelligence | Demo-complete |
+| 4 | Community Ecosystem | Demo + integration stubs |
+| 5 | Global Intelligence | Demo heuristics |
+| 6 | Autonomous Community Intelligence | Demo rule-agents |
 
-This is an offline demo build (JSON DB, zero npm deps, heuristic NLP). External integrations (Google Calendar, Maps, outbound webhooks) are **stubbed** — config is stored, HTTP egress is not performed.
+This is a demo build (Postgres via Neon or any PG, heuristic NLP, static SPA). External integrations (Google Calendar, Maps, email, outbound webhooks) are **stubbed** — config is stored, HTTP egress is not performed. See `next_steps.md` for how to productionize.
 
 ---
 
 ## Quick start
 
+### 1. Database + env
+
+1. Create a Postgres database ([Neon](https://console.neon.tech) is the easiest cloud option).
+2. Copy [`.env.example`](../.env.example) → `.env` at the repo root (or `backend/.env`).
+3. Set at least:
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | Neon/Postgres connection string (`?sslmode=require` for Neon) |
+| `DATABASE_SSL` | `true` for Neon / most cloud PG |
+| `JWT_SECRET` | Signing secret for auth tokens |
+| `PORT` / `HOST` | Backend listen address (default `4000` / `0.0.0.0`) |
+| `CORS_ORIGIN` | Browser origin(s), or `*` for local demo |
+| `SKILLMESH_API_BASE` | Browser API base (default `http://localhost:4000/api`) |
+
+### 2. Backend
+
 ```bash
 cd backend
-node src/seed.js
-node src/server.js          # http://localhost:4000
+npm install
+npm run db:migrate   # applies backend/src/db/schema.sql
+npm run seed         # demo users/communities (wipes tables first)
+npm start            # http://localhost:4000
+```
 
+Empty DB auto-seeds on first `npm start`. Use `npm run db:reset` to migrate + reseed in one step.
+
+### 3. Frontend
+
+```bash
 cd frontend
 python3 -m http.server 8080 # http://localhost:8080
+```
+
+Optional: create `frontend/js/config.local.js` to override the API base without editing tracked files:
+
+```js
+window.SKILLMESH_CONFIG = { API_BASE: 'http://localhost:4000/api' };
 ```
 
 Demo accounts (password `password123`):
@@ -36,6 +67,7 @@ Demo accounts (password `password123`):
 
 ```bash
 curl http://localhost:4000/health
+# expect: "database":"postgres"
 ```
 
 ---
@@ -140,7 +172,7 @@ curl -s -X POST http://localhost:4000/api/autonomy/os/$CID/pulse \
 
 ## Seeded demo world
 
-`node src/seed.js` creates:
+`npm run seed` creates:
 
 - **Greenwood Residents Community** (5 members) + **Riverside Makers Collective** (federation partner)
 - Project, NGO, opportunities, endorsements, event (First-Aid Workshop)
@@ -165,6 +197,6 @@ curl -s -X POST http://localhost:4000/api/autonomy/os/$CID/pulse \
 
 ## Architecture note
 
-Same swap points as earlier phases: `db.js` → Postgres, `nlp/skillExtractor.js` → LLM, static frontend → Next.js. Route contracts are stable.
+Postgres persistence lives in `db.js` (hydrate + persist). Next swaps: `nlp/skillExtractor.js` → LLM, static frontend → Next.js. Route contracts are stable.
 
 See also: `roadmap.md`, `system_architecture.md`, `project_story.md`, `next_steps.md`, root `README.md`.

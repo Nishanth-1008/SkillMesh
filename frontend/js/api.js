@@ -1,5 +1,9 @@
 // Thin wrapper around fetch() for talking to the SkillMesh backend.
-const API_BASE = window.SKILLMESH_API_BASE || 'http://localhost:4000/api';
+const API_BASE =
+  window.SKILLMESH_API_BASE ||
+  (window.SKILLMESH_CONFIG && window.SKILLMESH_CONFIG.API_BASE) ||
+  'http://localhost:4000/api';
+
 
 const Api = {
   async _request(method, path, { body, auth = false } = {}) {
@@ -102,11 +106,23 @@ const Api = {
     return Api._request('GET', `/events${qs ? `?${qs}` : ''}`);
   },
   createEvent: (payload) => Api._request('POST', '/events', { body: payload, auth: true }),
+  getEvent: (id) => Api._request('GET', `/events/${id}`),
   registerEvent: (id) => Api._request('POST', `/events/${id}/register`, { auth: true }),
+  checkinEvent: (id, userId) =>
+    Api._request('POST', `/events/${id}/checkin`, { body: { userId }, auth: true }),
+  eventImpact: (id, payload) =>
+    Api._request('POST', `/events/${id}/impact`, { body: payload, auth: true }),
   leaderboard: (communityId) =>
     Api._request('GET', `/gamification/leaderboard${communityId ? `?communityId=${communityId}` : ''}`),
+  milestones: (communityId) => Api._request('GET', `/gamification/milestones/${communityId}`),
   myGamification: () => Api._request('GET', '/gamification/me', { auth: true }),
   adminUsers: () => Api._request('GET', '/gamification/admin/users', { auth: true }),
+  adminAudit: () => Api._request('GET', '/gamification/admin/audit', { auth: true }),
+  adminModerate: (payload) =>
+    Api._request('POST', '/gamification/admin/moderate', { body: payload, auth: true }),
+  adminReport: (payload) =>
+    Api._request('POST', '/gamification/admin/report', { body: payload, auth: true }),
+  orgAnalytics: (id) => Api._request('GET', `/analytics/organization/${id}`),
 
   // Phase 4
   publicHub: () => Api._request('GET', '/ecosystem/hub'),
@@ -117,11 +133,24 @@ const Api = {
   createEmergency: (payload) => Api._request('POST', '/ecosystem/emergencies', { body: payload, auth: true }),
   respondEmergency: (id, eta) =>
     Api._request('POST', `/ecosystem/emergencies/${id}/respond`, { body: { eta }, auth: true }),
-  partnerships: () => Api._request('GET', '/ecosystem/partnerships'),
+  resolveEmergency: (id) =>
+    Api._request('POST', `/ecosystem/emergencies/${id}/resolve`, { auth: true }),
+  partnerships: (communityId) =>
+    Api._request('GET', `/ecosystem/partnerships${communityId ? `?communityId=${communityId}` : ''}`),
+  proposePartnership: (payload) =>
+    Api._request('POST', '/ecosystem/partnerships', { body: payload, auth: true }),
+  acceptPartnership: (id) =>
+    Api._request('POST', `/ecosystem/partnerships/${id}/accept`, { auth: true }),
+  sharedTalent: (a, b) =>
+    Api._request('GET', `/ecosystem/shared-talent?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`),
   integrations: () => Api._request('GET', '/ecosystem/integrations', { auth: true }),
   connectIntegration: (payload) => Api._request('POST', '/ecosystem/integrations', { body: payload, auth: true }),
   createApiKey: (payload) => Api._request('POST', '/ecosystem/api-keys', { body: payload, auth: true }),
+  listApiKeys: () => Api._request('GET', '/ecosystem/api-keys', { auth: true }),
+  createWebhook: (payload) => Api._request('POST', '/ecosystem/webhooks', { body: payload, auth: true }),
+  testWebhooks: () => Api._request('POST', '/ecosystem/webhooks/test', { auth: true }),
   listPlugins: () => Api._request('GET', '/ecosystem/plugins'),
+  installPlugin: (payload) => Api._request('POST', '/ecosystem/plugins', { body: payload, auth: true }),
 
   // Phase 5
   globalNetwork: () => Api._request('GET', '/intelligence/network'),
@@ -135,6 +164,8 @@ const Api = {
   runScenario: (payload) => Api._request('POST', '/intelligence/scenarios', { body: payload, auth: true }),
   listScenarios: (communityId) =>
     Api._request('GET', `/intelligence/scenarios${communityId ? `?communityId=${communityId}` : ''}`),
+  research: () => Api._request('GET', '/intelligence/research'),
+  createResearch: (payload) => Api._request('POST', '/intelligence/research', { body: payload, auth: true }),
 
   // Phase 6
   listAgents: (communityId) => Api._request('GET', `/autonomy/agents/${communityId}`),
@@ -149,3 +180,6 @@ const Api = {
   osPulse: (communityId, goal) =>
     Api._request('POST', `/autonomy/os/${communityId}/pulse`, { body: { goal }, auth: true }),
 };
+
+Api.decideOpportunity = (id, payload) =>
+  Api._request('POST', `/opportunities/${id}/decide`, { body: payload, auth: true });

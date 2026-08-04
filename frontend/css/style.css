@@ -310,6 +310,21 @@ label { font-size: 12.5px; font-weight: 600; letter-spacing: 0.3px; text-transfo
 
 .navlinks button { font-size: 12.5px; padding: 7px 10px; }
 
+.nav-more { position: relative; display: inline-block; }
+.nav-more summary {
+  list-style: none; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--panel-border);
+  color: var(--text); border-radius: 10px; padding: 7px 12px; font-size: 12.5px;
+}
+.nav-more summary::-webkit-details-marker { display: none; }
+.nav-more-panel {
+  position: absolute; right: 0; top: calc(100% + 6px); min-width: 168px;
+  background: rgba(10, 13, 22, 0.96); border: 1px solid var(--panel-border);
+  border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 4px;
+  z-index: 20; box-shadow: var(--shadow-glow);
+}
+.nav-more-panel button { width: 100%; text-align: left; }
+
 /* ---------- Graph ---------- */
 svg.graph-svg { width: 100%; height: 520px; background: radial-gradient(circle at 50% 50%, rgba(77,163,255,0.04), transparent 70%); border-radius: var(--radius); border: 1px solid var(--panel-border); }
 

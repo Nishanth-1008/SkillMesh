@@ -4,6 +4,7 @@
 // without needing `npm install express` (no registry access here).
 
 const { URL } = require('url');
+const { config } = require('../config');
 
 function pathToRegex(path) {
   const paramNames = [];
@@ -54,10 +55,14 @@ class Router {
     };
 
     // CORS (frontend runs on a different port during dev)
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const origin = config.CORS_ORIGIN || '*';
+    res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-    if (req.method === 'OPTIONS') {
+    if (origin !== '*') {
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Vary', 'Origin');
+    }    if (req.method === 'OPTIONS') {
       res.statusCode = 204;
       return res.end();
     }

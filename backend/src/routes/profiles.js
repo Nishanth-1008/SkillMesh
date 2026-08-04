@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const { Router } = require('../utils/router');
 const { getState, save } = require('../db');
 const { requireAuth } = require('../middleware/requireAuth');
-const { addRelationship } = require('../graph/relationships');
+const { addRelationship, removeRelationship } = require('../graph/relationships');
 const { computeTrustScore } = require('../services/trust');
 
 const router = new Router();
@@ -130,7 +130,12 @@ router.delete('/me/skills/:userSkillId', requireAuth, (req, res, next) => {
       err.status = 404;
       throw err;
     }
-    state.userSkills.splice(idx, 1);
+    const [removed] = state.userSkills.splice(idx, 1);
+    removeRelationship(state, {
+      fromType: 'person', fromId: req.user.id,
+      toType: 'skill', toId: removed.skillId,
+      kind: 'has_skill',
+    });
     save();
     res.status(204).end();
   } catch (e) { next(e); }

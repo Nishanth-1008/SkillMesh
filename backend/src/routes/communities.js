@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const { Router } = require('../utils/router');
 const { getState, save } = require('../db');
 const { requireAuth, optionalAuth } = require('../middleware/requireAuth');
-const { addRelationship } = require('../graph/relationships');
+const { addRelationship, removeRelationship } = require('../graph/relationships');
 
 const router = new Router();
 
@@ -128,7 +128,13 @@ router.post('/:id/leave', requireAuth, (req, res, next) => {
       err.status = 400;
       throw err;
     }
+    const communityId = req.params.id;
     state.communityMembers.splice(idx, 1);
+    removeRelationship(state, {
+      fromType: 'person', fromId: req.user.id,
+      toType: 'community', toId: communityId,
+      kind: 'member_of',
+    });
     save();
     res.json({ left: true });
   } catch (e) { next(e); }

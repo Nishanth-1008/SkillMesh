@@ -1,265 +1,164 @@
-# SkillMesh — Next Steps & Future Planning
+# SkillMesh — Next Steps: Make It Crazy Good
 
-How to take the current **Phases 1–6 demo** to a production-ready platform aligned with `system_architecture.md`.
+How to go from today’s **strong offline demo** to a product people obsess over — while staying honest about what’s real vs aspirational.
+
+Related: [`usage_guide.md`](./usage_guide.md) · [`system_architecture.md`](./system_architecture.md) · [`roadmap.md`](./roadmap.md)
 
 ---
 
-## 1. Where we are today
+## 0. What’s true right now
 
-SkillMesh is a **complete product prototype**: every roadmap phase has working APIs and UI flows. It is **not** yet the stack described in the architecture whitepaper.
+SkillMesh already has end-to-end demo coverage for Phases 1–6:
 
-| Layer | Demo (now) | Target (architecture doc) |
+- Natural-language search, team builder, projects, trust, opportunities (apply **and** decide)
+- Profile editing, leave community, graph edge sync
+- Analytics, events (register / check-in / impact), admin, gamification
+- Public hub + federation UI, emergency open/respond/resolve
+- Reasoning, passport, SDG impact, research datasets, scenarios
+- Agents, digital twin, OS pulse
+
+**Still demo-grade (by design):** hydrate/persist over SQL (not query-per-request), heuristic NLP, stubbed Calendar/Maps/email/webhooks egress, rule-based “agents.”
+
+---
+
+## 1. North star (what “crazy good” means)
+
+Not more features. A product that feels like **magic that communities trust**:
+
+1. You describe a problem in plain language → the right people appear in seconds, with a clear *why*.
+2. Building a team feels like a smart co-pilot, not a form.
+3. Emergencies feel fast and serious (with liability clarity).
+4. The knowledge graph is *alive* — beautiful, interactive, and useful.
+5. Trust grows from real work, not vanity metrics.
+6. Orgs (schools, NGOs, apartments) get dashboards they actually open weekly.
+
+---
+
+## 2. Priority roadmap (do in this order)
+
+### Wave 1 — Production foundation (2–3 weeks) · **must**
+
+Without this, nothing else sticks.
+
+| # | Work | Why it matters |
 |---|---|---|
-| Frontend | Static HTML/CSS/vanilla JS SPA | Next.js + React + Tailwind |
-| Backend | Node `http` + custom router | Node.js + Express (or Nest) |
-| Database | `backend/data/db.json` | PostgreSQL / Supabase |
-| Auth | Homegrown scrypt + HMAC JWT | Supabase Auth / Auth.js / Clerk |
-| AI / NLU | Dictionary + heuristics | Gemini / OpenAI + embeddings |
-| Graph viz | Hand-rolled SVG | react-force-graph / Cytoscape / deck.gl |
-| Search | In-memory string match | Vector store (pgvector / Pinecone) |
-| Integrations | Config stubs only | Live Google Calendar, Maps, email, etc. |
-| Hosting | Local processes | Vercel + Railway/Fly/Supabase |
-| Tests | Manual curl smoke checks | Automated unit/integration/e2e |
+| 1 | **Query-per-request SQL** (drop full-table persist) | Concurrency without rewrite races |
+| 2 | **Real auth** (Supabase Auth / Auth.js) | Password reset, OAuth, secure sessions |
+| 3 | **OpenAPI + Zod validation** | Stable contracts for a Next.js client |
+| 4 | **CI smoke tests** (login → search → team → emergency) | Never break the demo path |
+| 5 | **Env-based secrets** | Kill default JWT secret |
 
-**Design intent:** route contracts and data shapes were written so most of the above can be swapped **module-by-module** without rewriting product logic.
+**Exit:** Concurrent writers don’t lose data; prefer SQL mutations over full-table rewrite.
 
-Swap points already isolated:
+### Wave 2 — Real intelligence (2–3 weeks) · **the wow**
 
-- `backend/src/db.js` → Postgres client
-- `backend/src/nlp/skillExtractor.js` → LLM + embeddings
-- `backend/src/utils/auth.js` → real auth provider
-- `backend/src/utils/router.js` → Express
-- `frontend/` → Next.js app consuming the same `/api/*` paths
-
----
-
-## 2. Recommended finish-off order
-
-Do these in sequence. Each step leaves the product runnable.
-
-### Step A — Make it real data (1–2 weeks)
-
-1. Provision **Supabase** (or plain Postgres).
-2. Translate `emptyState()` collections in `db.js` into SQL migrations (tables + indexes).
-3. Implement `db.js` with `pg` / Supabase JS while keeping the same function names (`getState` patterns → repository methods).
-4. Add connection pooling, migrations (`prisma` or `drizzle` or raw SQL), and seed scripts against the DB.
-5. Add basic **concurrency** safety (transactions for join/invite/endorse).
-
-**Exit criteria:** seed + all existing curl flows work against Postgres; `db.json` deleted from the critical path.
-
-### Step B — Real AI (1–2 weeks)
-
-1. Replace `extractSkills()` body with an LLM call (Gemini preferred per architecture doc) that returns the same `{ intent, skills, urgent, locationHint }` shape.
-2. Add an **embedding** pipeline for people/skills/opportunities; store vectors in `pgvector`.
-3. Upgrade ranking in `search.js` / `teamBuilder.js` / `recommendations.js` to blend:
-   - semantic similarity
-   - trust score
-   - availability
-   - distance (Maps)
-   - collaboration history
-4. Keep the heuristic extractor as a **fallback** when the LLM is down (already a good pattern).
-5. Add prompt logging + cost caps for hackathon/demo budgets.
-
-**Exit criteria:** `"I need someone who can help kids with STEM robotics after school"` returns strong matches without relying only on keyword synonyms.
-
-### Step C — Production frontend (2–3 weeks)
-
-1. Scaffold **Next.js App Router** + Tailwind; port views from `frontend/js/views*.js` into components.
-2. Use the existing API client shapes in `frontend/js/api.js` as the TypeScript API layer.
-3. Replace SVG graph with a proper force-graph library; keep `{ nodes, edges }` payload.
-4. Add loading/error/empty states, mobile nav, and accessibility (keyboard, contrast, labels).
-5. Optional: PWA / offline-first shell for rural low-bandwidth (called out in `project_story.md`).
-
-**Exit criteria:** same user journeys as the SPA, nicer UX, deployable to Vercel.
-
-### Step D — Wire integrations that are currently stubs (2 weeks)
-
-| Stub today | Finish by |
-|---|---|
-| Google Calendar | Create/update events from `/api/events`; sync availability |
-| Google Maps | Geocode profiles; distance factor in ranking; emergency ETA |
-| Email / notifications | Sendgrid/Resend for invites, emergencies, digests |
-| Social login | Google/GitHub via Supabase Auth |
-| File storage | Supabase Storage for org docs / event assets |
-| Webhooks | Real outbound HTTP with retries + signatures |
-| Plugins | Load enabled plugins as sandboxed functions or WASM |
-
-**Exit criteria:** connecting an integration in `#developers` actually affects calendar/email/maps behavior.
-
-### Step E — Harden for production (ongoing, start in parallel after A)
-
-See [§4 Production readiness checklist](#4-production-readiness-checklist).
-
----
-
-## 3. What is left to integrate (checklist)
-
-### Core platform
-
-- [ ] PostgreSQL / Supabase schema + migrations
-- [ ] Express (or keep custom router behind a proper HTTP framework)
-- [ ] Typed API contract (OpenAPI / Zod)
-- [ ] Next.js frontend rewrite
-- [ ] Real JWT/session auth + refresh + password reset
-- [ ] Role model beyond owner/member (moderator, org admin, city admin)
-- [ ] File uploads
-- [ ] Rate limiting + abuse protection (partially sketched via API keys)
-
-### AI & knowledge
-
-- [ ] Gemini/OpenAI for intent + skill extraction
-- [ ] Embeddings + vector retrieval
-- [ ] Explainable ranking UI (“why this person”) backed by real model traces
-- [ ] Feedback loop (accepted/rejected recommendations retrain weights)
-- [ ] Multilingual NLU (roadmap Phase 4–5)
-- [ ] Hidden-expert inference via graph ML (not just collaborator skill proxy)
-
-### Collaboration & trust
-
-- [ ] Rich project timelines / kanban
-- [ ] Real-time messaging (WebSockets / Supabase Realtime)
-- [ ] Push notifications (web push / FCM)
-- [ ] Verified identity (KYC-lite or community vouching ceremonies)
-- [ ] Portable credentials as W3C Verifiable Credentials (passport is a demo today)
-
-### Ecosystem & ops
-
-- [ ] Live Google Calendar / Maps / email
-- [ ] Outbound webhooks with delivery workers (BullMQ / Inngest)
-- [ ] Public developer portal + SDK
-- [ ] Multi-tenant / regional federation with real cross-instance sync
-- [ ] Observability (OpenTelemetry, Sentry, structured logs)
-- [ ] CI/CD (GitHub Actions: test → migrate → deploy)
-- [ ] Automated backups & disaster recovery
-- [ ] Privacy / GDPR deletion workflows
-- [ ] Accessibility audit (WCAG) + i18n
-
-### Phase 6 “vision” still demo-grade
-
-These run as heuristics inside the JSON world; finishing them means real agents + infra:
-
-- [ ] Agent orchestration with durable jobs and human-in-the-loop approvals
-- [ ] Digital twin fed by live activity streams (not snapshot-on-request only)
-- [ ] Scenario simulation with calibrated models (not rule-of-thumb projections)
-- [ ] AR/VR, voice, IoT — explicitly future; do not block MVP launch on these
-
----
-
-## 4. Production readiness checklist
-
-Minimum bar before real communities use SkillMesh:
-
-**Security**
-
-- [ ] Secrets in env / vault (no default JWT secret)
-- [ ] HTTPS everywhere
-- [ ] Input validation on every write (Zod)
-- [ ] CSRF where cookie sessions are used
-- [ ] Rate limits on auth, search, emergency, webhooks
-- [ ] Audit log retention policy
-
-**Reliability**
-
-- [ ] Health checks + uptime monitoring
-- [ ] DB backups + restore drill
-- [ ] Queue for emails, webhooks, agent runs
-- [ ] Graceful LLM fallback (already partially designed)
-
-**Quality**
-
-- [ ] Unit tests for trust, team builder, analytics
-- [ ] API integration tests
-- [ ] Frontend e2e (Playwright) for login → search → team → emergency
-- [ ] Load test recommendation + graph endpoints
-
-**Compliance / trust**
-
-- [ ] Privacy policy + consent for location/skills
-- [ ] Data export / delete for users
-- [ ] Clear emergency disclaimer (not a substitute for 112/911)
-
----
-
-## 5. Suggested milestone plan
-
-| Milestone | Goal | Rough effort |
+| # | Work | Why |
 |---|---|---|
-| **M0 — Demo polish** | Stable seed, README, judge walkthrough script | 2–3 days |
-| **M1 — Data + Auth** | Postgres + Supabase Auth; API unchanged | 1–2 weeks |
-| **M2 — AI upgrade** | LLM NLU + embeddings in search/teams | 1–2 weeks |
-| **M3 — Next.js UI** | Parity with current SPA + better graph | 2–3 weeks |
-| **M4 — Integrations** | Calendar, email, Maps distance, live webhooks | 2 weeks |
-| **M5 — Pilot** | 1 school / 1 apartment / 1 NGO live for 4 weeks | 4 weeks |
-| **M6 — Public beta** | Multi-community, admin tools, monitoring | 4–6 weeks |
+| 1 | **Gemini/OpenAI** for intent + skill extraction (keep heuristic fallback) | Queries stop feeling brittle |
+| 2 | **Embeddings + pgvector** for people/skills/opps | True semantic match |
+| 3 | **Explainability panel** on every result (“matched robotics + taught before + trust 72”) | Builds trust in the AI |
+| 4 | **Feedback loop** thumbs up/down on recommendations | Ranking improves over time |
+| 5 | **Distance** via geocoded locations (Maps) | “Nearby” becomes real |
 
-Hackathon / demo path: stop at **M0–M2**.  
-Real community pilot: complete through **M5**.
+**Exit:** A vague sentence like *“help my kid’s school STEM club after exams”* returns a ranked, explained shortlist.
 
----
+### Wave 3 — Product craft (3–4 weeks) · **the feel**
 
-## 6. How to migrate without a rewrite
+| # | Work | Why |
+|---|---|---|
+| 1 | **Next.js + Tailwind** rewrite (keep `/api` contracts) | SSR, mobile, shareable URLs |
+| 2 | **Interactive force-graph** (react-force-graph / Cytoscape) | Graph becomes the hero visual |
+| 3 | **Realtime** (Supabase Realtime / WS) for invites, emergencies, chat | Feels alive |
+| 4 | **Email + push** for invites/emergencies/events | People actually show up |
+| 5 | **Org-specific workspaces** (school vs NGO vs apartment templates) | Vertical sharpness |
+| 6 | **Onboarding wizard** (join community → add 3 skills → try one search) | Activation |
 
-Keep this rule: **product routes stay stable; internals get replaced.**
+**Exit:** A first-time user reaches “aha” in under 3 minutes on mobile.
 
-```text
-Client  →  /api/search  →  search.js  →  extractSkills()  →  rank()
-                                      ↘ replace only these two
-```
+### Wave 4 — Trust & civic seriousness (2 weeks)
 
-Practical sequence inside the repo:
+| # | Work | Why |
+|---|---|---|
+| 1 | Verified org badges + skill endorsements with evidence | Reputation that matters |
+| 2 | Emergency **disclaimer + escalation** to official services | Legal + ethical |
+| 3 | Privacy: export/delete, location consent | Pilot-ready |
+| 4 | Impact reports NGOs can download (PDF/CSV) | Retention for orgs |
+| 5 | Moderation queue for owners (already started — deepen) | Safety |
 
-1. Add `backend/src/db/postgres.js` beside `db.js`; feature-flag with `DB_DRIVER=json|postgres`.
-2. Add `backend/src/nlp/llmExtractor.js`; feature-flag with `NLU_DRIVER=heuristic|llm`.
-3. Introduce TypeScript gradually (`allowJs`) starting with services.
-4. Stand up `apps/web` (Next.js) while `frontend/` remains the fallback demo.
-5. Delete JSON driver only after M1 is proven in staging.
+### Wave 5 — Moat features (later, selective)
 
----
+Only after Waves 1–3:
 
-## 7. Open product decisions (decide before M3)
+- Cross-community federation with real sync (not just partnership rows)
+- Portable **skill passport** as verifiable credentials
+- Agent runs as **durable jobs** with human approval before mass-notify
+- Multilingual NLU for India-first communities
+- Offline / low-bandwidth mode
 
-1. **Single-tenant community vs multi-tenant SaaS** — affects auth, billing, federation.
-2. **Emergency liability** — what SkillMesh promises vs redirects to official services.
-3. **Trust model** — endorsements only vs verified orgs vs government IDs.
-4. **Monetization** — free communities + paid org seats, or grants/NGO licensing.
-5. **Graph ownership** — can users export/port their skill passport off-platform? (Recommended: yes.)
-6. **Agent autonomy level** — auto-invite vs suggest-only for pilots (suggest-only is safer).
-
----
-
-## 8. Near-term “finish the demo” tasks (this weekend)
-
-If the goal is a polished judge/demo experience rather than production:
-
-1. Restart with fresh seed; walk the script: login → AI search → team builder → analytics → emergency → OS pulse.
-2. Record a 2–3 minute loom covering those flows.
-3. Pin `documentation/usage_guide.md` + this file in the README.
-4. Add 2–3 more seeded users/skills if a vertical story is needed (school / NGO / apartment).
-5. Fix any UI clutter in the nav (group Phase 3–6 under a “More” menu) — optional polish.
-6. Do **not** start Next.js mid-demo week unless the stack is already installing cleanly.
+**Explicitly defer:** AR/VR, IoT, “autonomous governance,” city digital twins as infrastructure.
 
 ---
 
-## 9. Success definition (when SkillMesh is “finished”)
+## 3. Experience bets (design, not just eng)
 
-Ship is “done” for a first public pilot when:
-
-1. A real community can sign up without engineers seeding JSON.
-2. Natural-language search uses an LLM and remains useful when the model is wrong (fallback).
-3. Invites, emergencies, and event reminders actually reach people by email/push.
-4. Trust and endorsements survive a Postgres restart and concurrent edits.
-5. Admins can moderate and export a simple impact/SDG report.
-6. Agents **suggest** actions; humans confirm anything that messages many people.
-7. Privacy/deletion and basic monitoring exist.
-
-Everything beyond that (global federation, digital twins as city infrastructure, AR/VR, autonomous governance) stays in `roadmap.md` as vision — valuable, but not required to finish the first version.
+1. **Conversation-first home** — one heroic input: “What do you need?” Everything else is secondary.
+2. **One community context at a time** — switcher in nav; analytics/search/teams inherit it.
+3. **Graph as storytelling** — click a person → see skills, collabs, trust trail animate.
+4. **Team builder as a draft** — never auto-spam invites without review (safer + higher quality).
+5. **Vertical landing pages** — “For apartments / schools / NGOs” with seeded playbooks.
 
 ---
 
-## Related docs
+## 4. Suggested 90-day plan
 
-- [`roadmap.md`](./roadmap.md) — original phase vision
-- [`system_architecture.md`](./system_architecture.md) — target technical design
-- [`usage_guide.md`](./usage_guide.md) — how to run the current demo
-- [`project_story.md`](./project_story.md) — problem, narrative, impact
-- Root [`README.md`](../README.md) — build status snapshot
+| Days | Focus | Demo you can show |
+|---|---|---|
+| 1–21 | Wave 1 (Postgres + auth + tests) | Multi-user stable demo |
+| 22–42 | Wave 2 (LLM + vectors + explain) | “Magic search” video |
+| 43–70 | Wave 3 (Next.js + graph + realtime + email) | Mobile pilot UI |
+| 71–90 | Wave 4 + **one live pilot** (1 school or 1 apartment) | Real users, real feedback |
+
+Success metric for day 90: **≥30 weekly active members in one community** who ran ≥1 successful match (person found / team formed / volunteer filled).
+
+---
+
+## 5. Technical migration rules (don’t rewrite blindly)
+
+1. Keep `/api/*` shapes stable; swap internals behind drivers (`DB_DRIVER`, `NLU_DRIVER`).
+2. Ship Next.js beside `frontend/` until parity, then cut over.
+3. Label every heuristic surface in UI as **demo AI** until LLM is on (already started).
+4. Prefer *suggest → human confirm* for anything that notifies many people.
+5. Measure: search → click profile → invite/apply conversion.
+
+---
+
+## 6. Open decisions (decide before Wave 3)
+
+1. Single-community product vs multi-tenant SaaS?
+2. Free forever for neighborhoods + paid org seats?
+3. How hard is identity verification for emergencies?
+4. India-first languages (Hindi + English) in Wave 2 or 5?
+5. Agents: suggest-only for pilots, or auto-invite with caps?
+
+---
+
+## 7. This week (if you only have 7 days)
+
+1. Re-seed, walk: login → edit profile → search → team → analytics → emergency → OS pulse → admin.
+2. Record a 3-minute demo loom with explainability callouts.
+3. Pick **one pilot community type** (apartment / school / NGO) and tighten seed + copy for that story.
+4. Move hot paths from hydrate/persist to real SQL queries (schema already in `backend/src/db/schema.sql`).
+5. Do **not** start AR, plugins marketplace depth, or “global intelligence” branding until Wave 2 lands.
+
+---
+
+## 8. Definition of “crazy good” shipped
+
+You’re there when:
+
+- A non-technical community admin can run SkillMesh without an engineer.
+- Search feels smarter than LinkedIn filters for *local* problems.
+- At least one org renews usage after a real event or volunteer drive.
+- People say: *“I didn’t know she lived two streets away.”*
+
+That’s the product. Everything else is scaffolding.
