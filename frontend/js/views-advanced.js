@@ -99,43 +99,105 @@ Views.events = async function (root) {
       <input class="input" id="title" placeholder="Title" />
       <textarea class="input" id="desc" rows="2" placeholder="Description"></textarea>
       <input class="input" id="cid" placeholder="Community ID" />
-      <button class="btn btn-primary" id="create">Create</button>
+      <button class="btn btn-primary" id="create">Save Event</button>
     </div>` : ''}
+    <div class="card" style="padding: 12px 18px;">
+      <div style="display:flex; gap:10px; align-items:center;" id="event-bar-tabs">
+        <strong style="margin-right:8px;">Event Bar:</strong>
+        <button class="btn btn-sm active" data-filter="all">All Events</button>
+        <button class="btn btn-sm" data-filter="upcoming">Upcoming</button>
+        <button class="btn btn-sm" data-filter="completed">Completed</button>
+      </div>
+    </div>
     <div id="list" class="grid"><div class="loading-line"><span class="spinner"></span> Loading…</div></div>
   `;
+
+  let currentFilter = 'all';
+
+  async function loadEventsList() {
+    const listEl = root.querySelector('#list');
+    if (!listEl) return;
+    listEl.innerHTML = `<div class="loading-line"><span class="spinner"></span> Loading events…</div>`;
+    const { events } = await Api.listEvents();
+    
+    let filtered = events;
+    if (currentFilter === 'upcoming') filtered = events.filter((e) => e.status === 'upcoming' || e.status === 'open');
+    else if (currentFilter === 'completed') filtered = events.filter((e) => e.status === 'completed' || e.status === 'closed');
+
+    listEl.innerHTML = filtered.length ? filtered.map((e) => `
+      <div class="card">
+        <span class="badge">${e.type || 'event'}</span>
+        <h3>${e.title}</h3>
+        <p class="muted">${e.description || ''}</p>
+        <p class="muted">${e.startAt ? new Date(e.startAt).toLocaleString() : 'TBD'} · ${e.registered || 0} registered · ${e.status}</p>
+        <button class="btn" data-view="${e.id}">Open</button>
+        ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-reg="${e.id}">Register</button>` : ''}
+      </div>
+    `).join('') : '<p class="muted">No events found in this category.</p>';
+
+    listEl.querySelectorAll('[data-view]').forEach((btn) => {
+      btn.onclick = () => App.navigate('event', { id: btn.getAttribute('data-view') });
+    });
+    listEl.querySelectorAll('[data-reg]').forEach((btn) => {
+      btn.onclick = async () => {
+        await Api.registerEvent(btn.getAttribute('data-reg'));
+        await loadEventsList();
+      };
+    });
+  }
+
+  root.querySelectorAll('#event-bar-tabs button').forEach((btn) => {
+    btn.onclick = async () => {
+      root.querySelectorAll('#event-bar-tabs button').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.getAttribute('data-filter');
+      await loadEventsList();
+    };
+  });
+
   if (Store.isLoggedIn()) {
     const { communities } = await Api.listCommunities();
-    if (communities[0]) root.querySelector('#cid').value = communities[0].id;
-    root.querySelector('#create').onclick = async () => {
-      try {
-        const { event } = await Api.createEvent({
-          title: root.querySelector('#title').value.trim(),
-          description: root.querySelector('#desc').value.trim(),
-          communityId: root.querySelector('#cid').value.trim(),
-        });
-        App.navigate('event', { id: event.id });
-      } catch (e) {
-        root.querySelector('#msg').innerHTML = `<div class="error-box">${e.message}</div>`;
-      }
-    };
+    if (communities[0] && root.querySelector('#cid')) root.querySelector('#cid').value = communities[0].id;
+    const createBtn = root.querySelector('#create');
+    if (createBtn) {
+      createBtn.onclick = async () => {
+        const title = root.querySelector('#title').value.trim();
+        const description = root.querySelector('#desc').value.trim();
+        const communityId = root.querySelector('#cid').value.trim();
+        const msgEl = root.querySelector('#msg');
+
+        if (!title || !communityId) {
+          msgEl.innerHTML = `<div class="error-box">Title and Community ID are required.</div>`;
+          return;
+        }
+
+        try {
+          createBtn.disabled = true;
+          createBtn.innerHTML = `<span class="spinner"></span> Saving…`;
+          await Api.createEvent({ title, description, communityId });
+          
+          root.querySelector('#title').value = '';
+          root.querySelector('#desc').value = '';
+          msgEl.innerHTML = `<div class="info-box">Event saved successfully and added to Event Bar!</div>`;
+          createBtn.disabled = false;
+          createBtn.innerHTML = `Save Event`;
+
+          currentFilter = 'all';
+          root.querySelectorAll('#event-bar-tabs button').forEach((b) => b.classList.remove('active'));
+          const allBtn = root.querySelector('#event-bar-tabs button[data-filter="all"]');
+          if (allBtn) allBtn.classList.add('active');
+
+          await loadEventsList();
+        } catch (e) {
+          msgEl.innerHTML = `<div class="error-box">${e.message}</div>`;
+          createBtn.disabled = false;
+          createBtn.innerHTML = `Save Event`;
+        }
+      };
+    }
   }
-  const { events } = await Api.listEvents();
-  root.querySelector('#list').innerHTML = events.length ? events.map((e) => `
-    <div class="card">
-      <span class="badge">${e.type || 'event'}</span>
-      <h3>${e.title}</h3>
-      <p class="muted">${e.description || ''}</p>
-      <p class="muted">${e.startAt ? new Date(e.startAt).toLocaleString() : 'TBD'} · ${e.registered || 0} registered · ${e.status}</p>
-      <button class="btn" data-view="${e.id}">Open</button>
-      ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-reg="${e.id}">Register</button>` : ''}
-    </div>
-  `).join('') : '<p class="muted">No events yet.</p>';
-  root.querySelectorAll('[data-view]').forEach((btn) => {
-    btn.onclick = () => App.navigate('event', { id: btn.getAttribute('data-view') });
-  });
-  root.querySelectorAll('[data-reg]').forEach((btn) => {
-    btn.onclick = async () => { await Api.registerEvent(btn.getAttribute('data-reg')); App.navigate('event', { id: btn.getAttribute('data-reg') }); };
-  });
+
+  await loadEventsList();
 };
 
 Views.event = async function (root, params) {

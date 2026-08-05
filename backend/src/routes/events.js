@@ -18,8 +18,9 @@ router.get('/', optionalAuth, (req, res, next) => {
     let events = state.events;
     if (req.query.communityId) events = events.filter((e) => e.communityId === req.query.communityId);
     if (req.query.status) events = events.filter((e) => e.status === req.query.status);
+    const sorted = [...events].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
     res.json({
-      events: events.map((e) => ({
+      events: sorted.map((e) => ({
         ...e,
         registered: state.eventAttendance.filter((a) => a.eventId === e.id).length,
       })),

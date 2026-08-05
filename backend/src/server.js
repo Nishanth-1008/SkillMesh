@@ -36,11 +36,19 @@ async function main() {
   });
 
   function mount(prefix, routeModule) {
+    const router = typeof routeModule === 'string' ? require(routeModule) : routeModule;
     app.use((req, res, next) => {
-      if (req.url.startsWith(prefix)) {
-        const router = require(routeModule);
-        req.url = req.url.replace(prefix, '') || '/';
-        return router.handle(req, res);
+      const url = req.url;
+      if (url === prefix || url.startsWith(prefix + '/') || url.startsWith(prefix + '?')) {
+        const originalUrl = req.url;
+        let subUrl = url.slice(prefix.length);
+        if (!subUrl || subUrl.startsWith('?')) {
+          subUrl = '/' + subUrl;
+        }
+        req.url = subUrl;
+        return router.handle(req, res).finally(() => {
+          req.url = originalUrl;
+        });
       }
       next();
     });

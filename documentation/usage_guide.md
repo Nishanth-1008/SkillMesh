@@ -70,6 +70,14 @@ curl http://localhost:4000/health
 # expect: "database":"postgres"
 ```
 
+### 4. Running Tests
+
+```bash
+node backend/src/tests/run_tests.js
+```
+
+Runs all 8 automated integration test suites validating Auth, Knowledge Graph Engine, Dissolution, NLP, Team Building, Analytics, Agents, and Emergency Response.
+
 ---
 
 ## UI map
@@ -80,12 +88,17 @@ curl http://localhost:4000/health
 | `#teams` | AI Team Builder |
 | `#communities` | Create/join communities + knowledge graph |
 | `#projects` | Collaboration projects, invites, discussion |
+| `#project` | Detailed project workspace and member management |
 | `#opportunities` | Volunteer / mentorship matching |
+| `#opportunity` | Single opportunity details & application form |
 | `#organizations` | NGO/school/club workspaces |
+| `#organization` | Single organization detail & member recruitment |
 | `#recommendations` | Mentors, volunteers, nearby people |
 | `#messages` | Inbox, notifications, activity feed |
 | `#analytics` | Community health, skill gaps, predictions |
 | `#events` | Events, registration, impact reports |
+| `#event` | Single event view & check-in console |
+| `#admin` | Community owner admin & moderation console |
 | `#leaderboard` | Rewards, achievements, rankings |
 | `#hub` | Public community directory |
 | `#emergency` | Emergency incident + rapid responder ranking |

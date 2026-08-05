@@ -20,6 +20,8 @@ const App = {
     // Phases 3–6
     analytics: Views.analytics,
     events: Views.events,
+    event: Views.event,
+    admin: Views.admin,
     leaderboard: Views.leaderboard,
     hub: Views.hub,
     emergency: Views.emergency,
@@ -71,6 +73,8 @@ const App = {
       organization: params.id ? `Organization #${params.id}` : 'Organization Detail',
       analytics: 'Intel & Analytics',
       events: 'Events',
+      event: params.id ? `Event #${params.id}` : 'Event Detail',
+      admin: 'Admin Console',
       leaderboard: 'Rewards & Leaderboard',
       hub: 'Public Hub',
       emergency: 'Emergency Response',
@@ -101,6 +105,23 @@ const App = {
         return `<a href="#${seg.route}" class="breadcrumb-item">${seg.label}</a><span class="breadcrumb-sep">/</span>`;
       })
       .join('');
+  },
+
+  isNavRouteActive(navRoute, currentRoute) {
+    if (navRoute === currentRoute) return true;
+    const parentChildMap = {
+      hub: ['community', 'project', 'opportunity', 'organization'],
+      communities: ['community'],
+      projects: ['project'],
+      opportunities: ['opportunity'],
+      organizations: ['organization'],
+      events: ['event'],
+    };
+    if (parentChildMap[navRoute] && parentChildMap[navRoute].includes(currentRoute)) {
+      return true;
+    }
+    if (currentRoute && currentRoute.startsWith(navRoute)) return true;
+    return false;
   },
 
   refreshNav() {
@@ -136,7 +157,8 @@ const App = {
             displayLabel = label.replace(' (Locked)', '');
           }
 
-          return `<button data-route="${r}" data-label="${displayLabel}" class="${route === r ? 'active' : ''}"><span>${icon}</span><span>${displayLabel}</span></button>`;
+          const isActive = this.isNavRouteActive(r, route);
+          return `<button data-route="${r}" data-label="${displayLabel}" class="${isActive ? 'active' : ''}"><span>${icon}</span><span>${displayLabel}</span></button>`;
         })
         .join('');
 
@@ -352,6 +374,21 @@ const App = {
     const headerEl = document.getElementById('profile-menu-header');
     const authActionEl = document.getElementById('pm-auth-action');
     const statusTextEl = document.getElementById('user-status-text');
+    const profileBtn = document.getElementById('user-profile-btn');
+    const profileWrapper = document.getElementById('user-profile-wrapper');
+
+    const { route, params } = this.parseHash();
+    const isProfileRoute = route === 'dashboard' || (route === 'profile' && user && params.id === user.id);
+
+    if (profileBtn) {
+      if (isProfileRoute) {
+        profileBtn.classList.add('active');
+        if (profileWrapper) profileWrapper.classList.add('active');
+      } else {
+        profileBtn.classList.remove('active');
+        if (profileWrapper) profileWrapper.classList.remove('active');
+      }
+    }
 
     if (Store.isLoggedIn() && user) {
       if (avatarEl) avatarEl.textContent = (user.name || '?').charAt(0).toUpperCase();

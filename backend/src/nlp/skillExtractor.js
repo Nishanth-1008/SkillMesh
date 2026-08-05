@@ -13,8 +13,8 @@ const SKILL_DICTIONARY = {
   electrical: ['electrician', 'electrical', 'wiring', 'power outage'],
   plumbing: ['plumber', 'plumbing', 'pipes', 'leak'],
   'first aid': ['first aid', 'cpr', 'medical emergency', 'first-aid'],
-  design: ['design', 'ui', 'ux', 'graphic design', 'figma'],
-  programming: ['programming', 'coding', 'developer', 'software', 'web development', 'app development'],
+  design: ['design', 'ui', 'ux', 'graphic design', 'figma', 'designer'],
+  programming: ['programming', 'coding', 'developer', 'software', 'web development', 'app development', 'react', 'node', 'javascript', 'python', 'frontend', 'backend'],
   'machine learning': ['machine learning', 'ml', 'ai', 'artificial intelligence', 'data science'],
   photography: ['photography', 'photographer', 'photo'],
   teaching: ['teach', 'teacher', 'tutor', 'mentor', 'mentoring'],
@@ -26,6 +26,7 @@ const SKILL_DICTIONARY = {
   music: ['music', 'singing', 'guitar', 'piano', 'instrument'],
   'blood donation': ['blood donation', 'blood camp', 'blood drive'],
   carpentry: ['carpenter', 'carpentry', 'woodwork'],
+  healthcare: ['health', 'healthcare', 'counseling', 'nursing', 'medical'],
 };
 
 const INTENT_KEYWORDS = {

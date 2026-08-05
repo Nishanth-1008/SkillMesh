@@ -34,7 +34,7 @@ const Api = {
   listCommunities: (q) => Api._request('GET', `/communities${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   getCommunity: (id) => Api._request('GET', `/communities/${id}`),
   createCommunity: (payload) => Api._request('POST', '/communities', { body: payload, auth: true }),
-  joinCommunity: (id) => Api._request('POST', `/communities/${id}/join`, { auth: true }),
+  joinCommunity: (id, payload = {}) => Api._request('POST', `/communities/${id}/join`, { body: payload, auth: true }),
   leaveCommunity: (id) => Api._request('POST', `/communities/${id}/leave`, { auth: true }),
 
   getProfile: (id) => Api._request('GET', `/profiles/${id}`),

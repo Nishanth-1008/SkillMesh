@@ -146,6 +146,7 @@ function renderProfile(root, profile, editable) {
         </div>
         ${editable ? `
         <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn btn-primary" id="open-edit-profile-modal">✏️ Edit Profile</button>
           <button class="btn" id="profile-inbox-btn">📥 Inbox & Alerts</button>
           <button class="btn btn-danger" id="profile-logout-btn">🚪 Log out</button>
         </div>` : ''}
@@ -166,37 +167,6 @@ function renderProfile(root, profile, editable) {
     </div>
     ${editable ? `
     <div class="card">
-      <h3>Edit profile</h3>
-      <div id="profile-msg"></div>
-      <label class="muted">Name</label>
-      <input class="input" id="edit-name" value="${(profile.name || '').replace(/"/g, '&quot;')}" />
-      <label class="muted">Location</label>
-      <input class="input" id="edit-location" value="${(profile.location || '').replace(/"/g, '&quot;')}" placeholder="e.g. Greenwood Sector 4" />
-      <label class="muted">Availability</label>
-      <select class="input" id="edit-availability">
-        <option value="available" ${profile.availability === 'available' ? 'selected' : ''}>available</option>
-        <option value="busy" ${profile.availability === 'busy' ? 'selected' : ''}>busy</option>
-      </select>
-      <label class="muted">Bio</label>
-      <textarea class="input" id="edit-bio" rows="2" placeholder="Short bio">${profile.bio || ''}</textarea>
-      <label class="muted">Interests (comma-separated)</label>
-      <input class="input" id="edit-interests" value="${Array.isArray(profile.interests) ? profile.interests.join(', ') : (profile.interests || '')}" />
-      <button class="btn btn-primary" id="save-profile">Save profile</button>
-    </div>
-    <div class="card">
-      <h3>Add a skill</h3>
-      <div id="msg"></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <input class="input" id="skill-name" placeholder="e.g. robotics, first aid, design" style="flex:2;min-width:160px;" />
-        <select class="input" id="skill-level" style="flex:1;min-width:120px;">
-          <option value="beginner">beginner</option>
-          <option value="intermediate" selected>intermediate</option>
-          <option value="expert">expert</option>
-        </select>
-        <button class="btn btn-primary" id="add-skill">Add</button>
-      </div>
-    </div>
-    <div class="card">
       <h3>Endorse someone</h3>
       <div id="endorse-msg"></div>
       <input class="input" id="endorse-user" placeholder="User ID (from a profile or search result)" />
@@ -216,9 +186,8 @@ function renderProfile(root, profile, editable) {
 
   if (editable) {
     const inboxBtn = root.querySelector('#profile-inbox-btn');
-    if (inboxBtn) {
-      inboxBtn.onclick = () => App.navigate('messages');
-    }
+    if (inboxBtn) inboxBtn.onclick = () => App.navigate('messages');
+    
     const logoutBtn = root.querySelector('#profile-logout-btn');
     if (logoutBtn) {
       logoutBtn.onclick = () => {
@@ -229,54 +198,114 @@ function renderProfile(root, profile, editable) {
       };
     }
 
-    root.querySelector('#save-profile').onclick = async () => {
-      const msg = root.querySelector('#profile-msg');
-      const interestsRaw = root.querySelector('#edit-interests').value.trim();
-      try {
-        await Api.updateMyProfile({
-          name: root.querySelector('#edit-name').value.trim(),
-          location: root.querySelector('#edit-location').value.trim(),
-          availability: root.querySelector('#edit-availability').value,
-          bio: root.querySelector('#edit-bio').value.trim(),
-          interests: interestsRaw ? interestsRaw.split(',').map((s) => s.trim()).filter(Boolean) : [],
-        });
-        msg.innerHTML = `<div class="info-box">Profile saved.</div>`;
-        App.navigate('dashboard');
-      } catch (e) {
-        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
-      }
-    };
-    root.querySelector('#add-skill').onclick = async () => {
-      const skill = root.querySelector('#skill-name').value.trim();
-      const level = root.querySelector('#skill-level').value;
-      const msg = root.querySelector('#msg');
-      if (!skill) return;
-      try {
-        await Api.addMySkill({ skill, level });
-        App.navigate('dashboard');
-      } catch (e) {
-        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
-      }
-    };
-    root.querySelectorAll('[data-remove]').forEach((el) => {
-      el.onclick = async (ev) => {
-        ev.preventDefault();
-        await Api.removeMySkill(el.getAttribute('data-remove'));
-        App.navigate('dashboard');
+    const editBtn = root.querySelector('#open-edit-profile-modal');
+    if (editBtn) {
+      editBtn.onclick = () => {
+        const modalHtml = `
+          <div id="profile-modal-msg"></div>
+          <label class="muted">Name</label>
+          <input class="input" id="edit-name" value="${(profile.name || '').replace(/"/g, '&quot;')}" />
+          <label class="muted">Location</label>
+          <input class="input" id="edit-location" value="${(profile.location || '').replace(/"/g, '&quot;')}" placeholder="e.g. Greenwood Sector 4" />
+          <label class="muted">Availability</label>
+          <select class="input" id="edit-availability">
+            <option value="available" ${profile.availability === 'available' ? 'selected' : ''}>available</option>
+            <option value="busy" ${profile.availability === 'busy' ? 'selected' : ''}>busy</option>
+          </select>
+          <label class="muted">Bio</label>
+          <textarea class="input" id="edit-bio" rows="2" placeholder="Short bio">${profile.bio || ''}</textarea>
+          <label class="muted">Interests (comma-separated)</label>
+          <input class="input" id="edit-interests" value="${Array.isArray(profile.interests) ? profile.interests.join(', ') : (profile.interests || '')}" />
+          
+          <hr class="divider" style="margin:16px 0;" />
+          <h4 style="margin:0 0 10px;">Add a Skill</h4>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+            <input class="input" id="modal-skill-name" placeholder="e.g. robotics, first aid, design" style="flex:2;min-width:160px;" />
+            <select class="input" id="modal-skill-level" style="flex:1;min-width:120px;">
+              <option value="beginner">beginner</option>
+              <option value="intermediate" selected>intermediate</option>
+              <option value="expert">expert</option>
+            </select>
+            <button class="btn btn-sm" id="modal-add-skill-btn">+ Add Skill</button>
+          </div>
+          <div id="modal-skill-msg"></div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button class="btn" id="cancel-edit-profile">Cancel</button>
+            <button class="btn btn-primary" id="save-edit-profile">Save Profile</button>
+          </div>
+        `;
+
+        App.openModal(modalHtml, '✏️ Edit Your Profile');
+
+        const modalContainer = document.getElementById('modal-container');
+        const cancelBtn = modalContainer.querySelector('#cancel-edit-profile');
+        const saveBtn = modalContainer.querySelector('#save-edit-profile');
+        const addSkillBtn = modalContainer.querySelector('#modal-add-skill-btn');
+        const msgEl = modalContainer.querySelector('#profile-modal-msg');
+        const skillMsgEl = modalContainer.querySelector('#modal-skill-msg');
+
+        if (cancelBtn) cancelBtn.onclick = () => modalContainer.classList.add('hidden');
+
+        if (addSkillBtn) {
+          addSkillBtn.onclick = async () => {
+            const skill = modalContainer.querySelector('#modal-skill-name').value.trim();
+            const level = modalContainer.querySelector('#modal-skill-level').value;
+            if (!skill) return;
+            try {
+              await Api.addMySkill({ skill, level });
+              modalContainer.querySelector('#modal-skill-name').value = '';
+              skillMsgEl.innerHTML = `<div class="info-box" style="padding:6px 12px;font-size:12px;">Skill added!</div>`;
+            } catch (err) {
+              skillMsgEl.innerHTML = `<div class="error-box" style="padding:6px 12px;font-size:12px;">${err.message}</div>`;
+            }
+          };
+        }
+
+        if (saveBtn) {
+          saveBtn.onclick = async () => {
+            const name = modalContainer.querySelector('#edit-name').value.trim();
+            const location = modalContainer.querySelector('#edit-location').value.trim();
+            const availability = modalContainer.querySelector('#edit-availability').value;
+            const bio = modalContainer.querySelector('#edit-bio').value.trim();
+            const interestsRaw = modalContainer.querySelector('#edit-interests').value.trim();
+            const interests = interestsRaw ? interestsRaw.split(',').map((s) => s.trim()).filter(Boolean) : [];
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<span class="spinner"></span> Saving…`;
+
+            try {
+              const { user } = await Api.updateMyProfile({ name, location, availability, bio, interests });
+              Store.setUser(user);
+              modalContainer.classList.add('hidden');
+              App.showToast('Profile updated successfully!');
+              App.refreshNav();
+              App.navigate('dashboard');
+            } catch (err) {
+              msgEl.innerHTML = `<div class="error-box">${err.message}</div>`;
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = `Save Profile`;
+            }
+          };
+        }
       };
-    });
-    root.querySelector('#endorse-btn').onclick = async () => {
-      const toUserId = root.querySelector('#endorse-user').value.trim();
-      const skill = root.querySelector('#endorse-skill').value.trim();
-      const note = root.querySelector('#endorse-note').value.trim();
-      const msg = root.querySelector('#endorse-msg');
-      try {
-        await Api.endorse({ toUserId, skill, note });
-        msg.innerHTML = `<div class="info-box">Endorsement sent.</div>`;
-      } catch (e) {
-        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
-      }
-    };
+    }
+
+    const endorseBtn = root.querySelector('#endorse-btn');
+    if (endorseBtn) {
+      endorseBtn.onclick = async () => {
+        const toUserId = root.querySelector('#endorse-user').value.trim();
+        const skill = root.querySelector('#endorse-skill').value.trim();
+        const note = root.querySelector('#endorse-note').value.trim();
+        const msg = root.querySelector('#endorse-msg');
+        try {
+          await Api.endorse({ toUserId, skill, note });
+          msg.innerHTML = `<div class="info-box">Endorsement sent.</div>`;
+        } catch (e) {
+          msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+        }
+      };
+    }
   } else if (root.querySelector('#endorse-btn')) {
     root.querySelector('#endorse-btn').onclick = async () => {
       const skill = root.querySelector('#endorse-skill').value.trim();
@@ -290,6 +319,64 @@ function renderProfile(root, profile, editable) {
         msg.innerHTML = `<div class="error-box">${e.message}</div>`;
       }
     };
+  }
+
+  root.querySelectorAll('[data-remove]').forEach((el) => {
+    el.onclick = async (ev) => {
+      ev.preventDefault();
+      await Api.removeMySkill(el.getAttribute('data-remove'));
+      App.navigate('dashboard');
+    };
+  });
+}
+
+async function handleJoinCommunity(communityId, communityName, onSuccess) {
+  try {
+    const res = await Api.joinCommunity(communityId);
+    if (res.requiresSwitch) {
+      const modalContent = `
+        <div class="info-box" style="margin-bottom:14px; border-color:var(--amber);">
+          ⚠️ You are currently an active member of <strong>${res.currentCommunity.name}</strong>.
+        </div>
+        <p>SkillMesh enforces <strong>1 active community</strong> per user. Joining <strong>${res.targetCommunity.name}</strong> will automatically switch your membership.</p>
+        <p class="muted" style="font-size:12.5px;">Note: If your previous community has 0 remaining members, it will be automatically dissolved.</p>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+          <button class="btn" id="cancel-switch-btn">Cancel</button>
+          <button class="btn btn-primary" id="confirm-switch-btn">Switch Community</button>
+        </div>
+      `;
+      App.openModal(modalContent, '🔄 Switch Active Community');
+
+      const modalContainer = document.getElementById('modal-container');
+      const cancelBtn = modalContainer.querySelector('#cancel-switch-btn');
+      const confirmBtn = modalContainer.querySelector('#confirm-switch-btn');
+
+      if (cancelBtn) {
+        cancelBtn.onclick = () => modalContainer.classList.add('hidden');
+      }
+      if (confirmBtn) {
+        confirmBtn.onclick = async () => {
+          confirmBtn.disabled = true;
+          confirmBtn.innerHTML = `<span class="spinner"></span> Switching…`;
+          try {
+            await Api.joinCommunity(communityId, { confirmSwitch: true });
+            modalContainer.classList.add('hidden');
+            App.showToast(`Switched active community to ${res.targetCommunity.name}!`);
+            if (onSuccess) onSuccess();
+          } catch (err) {
+            App.showToast(err.message || 'Failed to switch community.');
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = `Switch Community`;
+          }
+        };
+      }
+      return;
+    }
+
+    App.showToast(`Joined ${communityName || 'community'} successfully!`);
+    if (onSuccess) onSuccess();
+  } catch (err) {
+    App.showToast(err.message || 'Failed to join community.');
   }
 }
 
@@ -338,16 +425,17 @@ Views.communities = async function (root) {
         <p class="muted">${c.description || 'No description.'}</p>
         <p class="muted">${c.memberCount} member${c.memberCount === 1 ? '' : 's'}</p>
         <button class="btn" data-view="${c.id}">View</button>
-        ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-join="${c.id}">Join</button>` : ''}
+        ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-join="${c.id}" data-name="${(c.name || '').replace(/"/g, '&quot;')}">Join</button>` : ''}
       </div>
     `).join('');
     list.querySelectorAll('[data-view]').forEach((btn) => {
       btn.onclick = () => App.navigate('community', { id: btn.getAttribute('data-view') });
     });
     list.querySelectorAll('[data-join]').forEach((btn) => {
-      btn.onclick = async () => {
-        await Api.joinCommunity(btn.getAttribute('data-join'));
-        App.navigate('community', { id: btn.getAttribute('data-join') });
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-join');
+        const name = btn.getAttribute('data-name');
+        handleJoinCommunity(id, name, () => App.navigate('community', { id }));
       };
     });
   }
@@ -384,7 +472,7 @@ Views.community = async function (root, params) {
         <p class="muted">${community.memberCount} members</p>
         ${Store.isLoggedIn() ? `
           ${!myMembership ? `<button class="btn btn-primary" id="join">Join</button>` : ''}
-          ${myMembership && !isOwner ? `<button class="btn btn-danger" id="leave">Leave</button>` : ''}
+          ${myMembership ? `<button class="btn btn-danger" id="leave">Leave Community</button>` : ''}
           <button class="btn" id="search-here">AI search here</button>
           <button class="btn" id="team-here">Build team here</button>
           <button class="btn" id="analytics-here">Community intel</button>
@@ -401,11 +489,18 @@ Views.community = async function (root, params) {
     `;
     if (Store.isLoggedIn()) {
       if (root.querySelector('#join')) {
-        root.querySelector('#join').onclick = async () => { await Api.joinCommunity(community.id); App.navigate('community', { id: community.id }); };
+        root.querySelector('#join').onclick = () => {
+          handleJoinCommunity(community.id, community.name, () => App.navigate('community', { id: community.id }));
+        };
       }
       if (root.querySelector('#leave')) {
         root.querySelector('#leave').onclick = async () => {
-          await Api.leaveCommunity(community.id);
+          const res = await Api.leaveCommunity(community.id);
+          if (res.dissolved) {
+            App.showToast(`Community "${community.name}" dissolved as member count hit 0.`);
+          } else {
+            App.showToast(`Left community "${community.name}".`);
+          }
           App.navigate('communities');
         };
       }

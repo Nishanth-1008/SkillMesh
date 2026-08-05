@@ -81,6 +81,22 @@ router.get('/:id', (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+function checkAutoDissolve(state, communityId) {
+  if (!communityId) return false;
+  const count = state.communityMembers.filter((m) => m.communityId === communityId).length;
+  if (count === 0) {
+    const cIdx = state.communities.findIndex((c) => c.id === communityId);
+    if (cIdx !== -1) {
+      state.communities.splice(cIdx, 1);
+    }
+    state.relationships = (state.relationships || []).filter(
+      (r) => !(r.fromType === 'community' && r.fromId === communityId) && !(r.toType === 'community' && r.toId === communityId)
+    );
+    return true;
+  }
+  return false;
+}
+
 router.post('/:id/join', requireAuth, (req, res, next) => {
   try {
     const state = getState();
@@ -90,10 +106,34 @@ router.post('/:id/join', requireAuth, (req, res, next) => {
       err.status = 404;
       throw err;
     }
-    const already = state.communityMembers.find(
-      (m) => m.communityId === community.id && m.userId === req.user.id
-    );
-    if (already) return res.json({ joined: true, already: true });
+
+    const currentMembership = state.communityMembers.find((m) => m.userId === req.user.id);
+    if (currentMembership) {
+      if (currentMembership.communityId === community.id) {
+        return res.json({ joined: true, already: true });
+      }
+
+      // User belongs to another community
+      if (!req.body.confirmSwitch) {
+        const currentComm = state.communities.find((c) => c.id === currentMembership.communityId);
+        return res.status(200).json({
+          requiresSwitch: true,
+          currentCommunity: currentComm ? { id: currentComm.id, name: currentComm.name } : { id: currentMembership.communityId, name: 'Current Community' },
+          targetCommunity: { id: community.id, name: community.name },
+        });
+      }
+
+      // Confirmed switch: remove user from previous community
+      const prevCommunityId = currentMembership.communityId;
+      const mIdx = state.communityMembers.findIndex((m) => m.id === currentMembership.id);
+      if (mIdx !== -1) state.communityMembers.splice(mIdx, 1);
+      removeRelationship(state, {
+        fromType: 'person', fromId: req.user.id,
+        toType: 'community', toId: prevCommunityId,
+        kind: 'member_of',
+      });
+      checkAutoDissolve(state, prevCommunityId);
+    }
 
     state.communityMembers.push({
       id: crypto.randomUUID(),
@@ -108,7 +148,7 @@ router.post('/:id/join', requireAuth, (req, res, next) => {
       kind: 'member_of', weight: 1,
     });
     save();
-    res.status(201).json({ joined: true });
+    res.status(201).json({ joined: true, switched: !!currentMembership });
   } catch (e) { next(e); }
 });
 
@@ -123,11 +163,7 @@ router.post('/:id/leave', requireAuth, (req, res, next) => {
       err.status = 400;
       throw err;
     }
-    if (state.communityMembers[idx].role === 'owner') {
-      const err = new Error('Owner cannot leave their own community — transfer ownership first');
-      err.status = 400;
-      throw err;
-    }
+
     const communityId = req.params.id;
     state.communityMembers.splice(idx, 1);
     removeRelationship(state, {
@@ -135,8 +171,10 @@ router.post('/:id/leave', requireAuth, (req, res, next) => {
       toType: 'community', toId: communityId,
       kind: 'member_of',
     });
+
+    const dissolved = checkAutoDissolve(state, communityId);
     save();
-    res.json({ left: true });
+    res.json({ left: true, dissolved });
   } catch (e) { next(e); }
 });
 

@@ -322,6 +322,13 @@ h1, h2, h3, h4, h5, h6, .brand-text {
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
+.user-profile-btn.active {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.25), rgba(56, 189, 248, 0.15)) !important;
+  border-color: var(--cyan) !important;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+  color: var(--cyan) !important;
+}
+
 /* ---------- Layout ---------- */
 .view { flex: 1; padding: 36px 32px 60px; max-width: 1140px; margin: 0 auto; width: 100%; animation: fadeIn 0.35s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
