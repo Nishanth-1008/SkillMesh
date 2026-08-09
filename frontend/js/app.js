@@ -129,22 +129,22 @@ const App = {
     const { route } = this.parseHash();
     const loggedIn = Store.isLoggedIn();
     
-    // Left sidebar navigation config (cleaned of redundant Inbox, Profile, For You, and Log Out links)
+    // Left sidebar navigation config with Lucide icon tags
     const items = [
-      ['search', '🔍', 'AI Search'],
-      ['teams', '👥', 'AI Team Builder'],
-      ['communities', '🌐', 'Communities'],
-      ['analytics', '📊', 'Community Intel'],
-      ['events', '📅', 'Events & Impact'],
-      ['hub', '🌌', 'Public Hub'],
-      ['emergency', '🚨', 'Emergency Center'],
-      ['intelligence', '🧠', 'Global Reasoning'],
-      ['autonomy', '🤖', 'Autonomous Agents'],
-      ['leaderboard', '🏆', 'Rewards & Points'],
-      ['projects', '📁', 'Projects'],
-      ['opportunities', '🎯', 'Opportunities'],
-      ['organizations', '🏢', 'Organizations'],
-      ['developers', '💻', 'Developer APIs'],
+      ['search', '<i data-lucide="search" style="width: 18px; height: 18px;"></i>', 'AI Search'],
+      ['teams', '<i data-lucide="users" style="width: 18px; height: 18px;"></i>', 'AI Team Builder'],
+      ['communities', '<i data-lucide="globe" style="width: 18px; height: 18px;"></i>', 'Communities'],
+      ['analytics', '<i data-lucide="bar-chart-3" style="width: 18px; height: 18px;"></i>', 'Community Intel'],
+      ['events', '<i data-lucide="calendar" style="width: 18px; height: 18px;"></i>', 'Events & Impact'],
+      ['hub', '<i data-lucide="compass" style="width: 18px; height: 18px;"></i>', 'Public Hub'],
+      ['emergency', '<i data-lucide="alert-triangle" style="width: 18px; height: 18px;"></i>', 'Emergency Center'],
+      ['intelligence', '<i data-lucide="brain" style="width: 18px; height: 18px;"></i>', 'Global Reasoning'],
+      ['autonomy', '<i data-lucide="bot" style="width: 18px; height: 18px;"></i>', 'Autonomous Agents'],
+      ['leaderboard', '<i data-lucide="trophy" style="width: 18px; height: 18px;"></i>', 'Rewards & Points'],
+      ['projects', '<i data-lucide="folder" style="width: 18px; height: 18px;"></i>', 'Projects'],
+      ['opportunities', '<i data-lucide="target" style="width: 18px; height: 18px;"></i>', 'Opportunities'],
+      ['organizations', '<i data-lucide="building" style="width: 18px; height: 18px;"></i>', 'Organizations'],
+      ['developers', '<i data-lucide="code" style="width: 18px; height: 18px;"></i>', 'Developer APIs'],
     ];
 
     const protectedRoutes = ['messages', 'recommendations', 'dashboard'];
@@ -177,6 +177,7 @@ const App = {
     // Refresh TopNav components
     this.updateTopNavUser();
     this.updateNotificationBadge();
+    window.lucide?.createIcons();
   },
 
   // ---------- Top Navigation Systems ----------
@@ -185,7 +186,10 @@ const App = {
     document.documentElement.setAttribute('data-theme', this.currentTheme);
     const themeBtn = document.getElementById('theme-toggle');
     if (themeBtn) {
-      themeBtn.querySelector('.theme-icon').textContent = this.currentTheme === 'light' ? '☀️' : '🌙';
+      const themeIcon = themeBtn.querySelector('.theme-icon');
+      if (themeIcon) {
+        themeIcon.innerHTML = this.currentTheme === 'light' ? '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>';
+      }
       themeBtn.onclick = () => this.toggleTheme();
     }
 
@@ -215,7 +219,7 @@ const App = {
               communities.slice(0, 3).forEach((c) => {
                 searchOut += `
                   <div class="search-result-item" data-navigate="community" data-id="${c.id}">
-                    <span>🏙️</span>
+                    <span><i data-lucide="building-2" style="width: 16px; height: 16px;"></i></span>
                     <div><strong>${c.name}</strong><br/><span class="muted" style="font-size:11px;">${c.description || 'Community'}</span></div>
                   </div>`;
               });
@@ -225,13 +229,14 @@ const App = {
             searchOut += `<div class="search-group-title">Platform Quick Links</div>`;
             searchOut += `
               <div class="search-result-item" data-navigate="teams">
-                <span>👥</span><div><strong>AI Team Builder</strong><br/><span class="muted" style="font-size:11px;">Find candidates for "${query}"</span></div>
+                <span><i data-lucide="users" style="width: 16px; height: 16px;"></i></span><div><strong>AI Team Builder</strong><br/><span class="muted" style="font-size:11px;">Find candidates for "${query}"</span></div>
               </div>
               <div class="search-result-item" data-navigate="search">
-                <span>🔍</span><div><strong>Full AI Search</strong><br/><span class="muted" style="font-size:11px;">Run query: ${query}</span></div>
+                <span><i data-lucide="search" style="width: 16px; height: 16px;"></i></span><div><strong>Full AI Search</strong><br/><span class="muted" style="font-size:11px;">Run query: ${query}</span></div>
               </div>`;
 
             searchResults.innerHTML = searchOut;
+            window.lucide?.createIcons();
             searchResults.querySelectorAll('[data-navigate]').forEach((el) => {
               el.onclick = () => {
                 const target = el.getAttribute('data-navigate');
@@ -362,9 +367,13 @@ const App = {
     document.documentElement.setAttribute('data-theme', this.currentTheme);
     const themeBtn = document.getElementById('theme-toggle');
     if (themeBtn) {
-      themeBtn.querySelector('.theme-icon').textContent = this.currentTheme === 'light' ? '☀️' : '🌙';
+      const themeIcon = themeBtn.querySelector('.theme-icon');
+      if (themeIcon) {
+        themeIcon.innerHTML = this.currentTheme === 'light' ? '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>';
+      }
     }
     this.showToast(`Switched to ${this.currentTheme} mode`);
+    window.lucide?.createIcons();
   },
 
   updateTopNavUser() {
@@ -398,7 +407,7 @@ const App = {
         headerEl.innerHTML = `<strong>${user.name}</strong><br/><span class="muted" style="font-size:12px;">${user.email}</span>`;
       }
       if (authActionEl) {
-        authActionEl.innerHTML = `<button class="dropdown-item" style="color:var(--red);" id="pm-logout">🚪 Log out</button>`;
+        authActionEl.innerHTML = `<button class="dropdown-item" style="color:var(--red);" id="pm-logout"><i data-lucide="log-out" style="width: 16px; height: 16px; margin-right: 8px;"></i> Log out</button>`;
         document.getElementById('pm-logout').onclick = () => {
           Store.clearToken();
           Store.setUser(null);
@@ -407,18 +416,19 @@ const App = {
         };
       }
     } else {
-      if (avatarEl) avatarEl.textContent = '👤';
+      if (avatarEl) avatarEl.innerHTML = '<i data-lucide="user" style="width: 14px; height: 14px;"></i>';
       if (nameLabel) nameLabel.textContent = 'Guest';
       if (headerEl) {
         headerEl.innerHTML = `<strong>Guest User</strong><br/><span class="muted" style="font-size:12px;">Log in to access your inbox</span>`;
       }
       if (authActionEl) {
-        authActionEl.innerHTML = `<button class="dropdown-item" style="color:var(--cyan);" id="pm-login">🔑 Log in</button>`;
+        authActionEl.innerHTML = `<button class="dropdown-item" style="color:var(--cyan);" id="pm-login"><i data-lucide="log-in" style="width: 16px; height: 16px; margin-right: 8px;"></i> Log in</button>`;
         document.getElementById('pm-login').onclick = () => {
           this.navigate('login');
         };
       }
     }
+    window.lucide?.createIcons();
   },
 
   async updateNotificationBadge() {
@@ -570,13 +580,14 @@ const App = {
       <div class="modal-card">
         <div class="modal-header">
           <h3>${title}</h3>
-          <button class="modal-close-btn" id="modal-close">✕</button>
+          <button class="modal-close-btn" id="modal-close"><i data-lucide="x" style="width: 18px; height: 18px;"></i></button>
         </div>
         <div class="modal-body">${contentHtml}</div>
       </div>
     `;
 
     container.classList.remove('hidden');
+    window.lucide?.createIcons();
 
     const closeBtn = container.querySelector('#modal-close');
     if (closeBtn) {
@@ -631,7 +642,7 @@ const App = {
       </div>
     `;
 
-    this.openModal(modalContent, '🌱 Log SDG Impact Contribution');
+    this.openModal(modalContent, '<i data-lucide="sprout" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;"></i> Log SDG Impact Contribution');
 
     const modalContainer = document.getElementById('modal-container');
     const cancelBtn = modalContainer.querySelector('#modal-cancel-btn');
@@ -687,6 +698,7 @@ const App = {
     this.refreshNav();
     const root = document.getElementById('view');
     await this.routes[route](root, params);
+    window.lucide?.createIcons();
   },
 
   async init() {

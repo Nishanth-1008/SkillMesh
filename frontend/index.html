@@ -6,19 +6,20 @@
 <title>SkillMesh — Every Community Already Has the People It Needs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
 <link rel="stylesheet" href="css/style.css" />
+<script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <div id="app">
     <nav class="topnav">
       <div class="topnav-left">
         <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle sidebar">
-          <span class="hamburger-icon">≡</span>
+          <span class="hamburger-icon"><i data-lucide="menu"></i></span>
         </button>
         <a href="#home" class="brand" style="text-decoration: none; color: inherit;">
-          <span class="brand-mark">✦</span>
+          <span class="brand-mark"><i data-lucide="sparkles" style="width: 16px; height: 16px;"></i></span>
           <span class="brand-text">SkillMesh</span>
         </a>
         <div id="breadcrumb" class="breadcrumb-container"></div>
@@ -26,7 +27,7 @@
 
       <div class="topnav-center">
         <div id="global-search-container" class="global-search-wrapper">
-          <span class="search-icon">🔍</span>
+          <span class="search-icon"><i data-lucide="search" style="width: 16px; height: 16px;"></i></span>
           <input type="text" id="global-search-input" class="global-search-input" placeholder="Search people, teams, skills, communities..." autocomplete="off" />
           <div id="global-search-results" class="search-results-dropdown hidden"></div>
         </div>
@@ -34,26 +35,26 @@
 
       <div class="topnav-right">
         <button id="theme-toggle" class="nav-icon-btn" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
-          <span class="theme-icon">🌙</span>
+          <span class="theme-icon"><i data-lucide="moon"></i></span>
         </button>
 
         <div id="quick-actions-wrapper" class="nav-dropdown-wrapper">
           <button id="quick-action-btn" class="btn btn-primary btn-sm quick-action-btn">
             <span>+ Quick Action</span>
-            <span class="chevron">▾</span>
+            <span class="chevron"><i data-lucide="chevron-down" style="width: 12px; height: 12px;"></i></span>
           </button>
           <div id="quick-action-dropdown" class="nav-dropdown hidden">
-            <button class="dropdown-item" id="qa-create-community">➕ Create Community</button>
-            <button class="dropdown-item" id="qa-assemble-team">👥 Assemble Team</button>
-            <button class="dropdown-item" id="qa-invite-members">📩 Invite Members</button>
+            <button class="dropdown-item" id="qa-create-community"><i data-lucide="plus-circle" style="width: 16px; height: 16px; margin-right: 8px;"></i> Create Community</button>
+            <button class="dropdown-item" id="qa-assemble-team"><i data-lucide="users" style="width: 16px; height: 16px; margin-right: 8px;"></i> Assemble Team</button>
+            <button class="dropdown-item" id="qa-invite-members"><i data-lucide="mail" style="width: 16px; height: 16px; margin-right: 8px;"></i> Invite Members</button>
             <div class="dropdown-divider"></div>
-            <button class="dropdown-item" id="qa-log-impact">🌱 Log Impact</button>
+            <button class="dropdown-item" id="qa-log-impact"><i data-lucide="sprout" style="width: 16px; height: 16px; margin-right: 8px;"></i> Log Impact</button>
           </div>
         </div>
 
         <div id="notif-bell-wrapper" class="nav-dropdown-wrapper">
           <button id="notif-bell-btn" class="nav-icon-btn notif-bell-btn" title="Notifications" aria-label="Notifications">
-            <span>🔔</span>
+            <span><i data-lucide="bell"></i></span>
             <span id="notif-badge" class="notif-badge hidden">0</span>
           </button>
           <div id="notif-dropdown" class="nav-dropdown notif-dropdown hidden">
@@ -65,23 +66,23 @@
               <div class="muted-small p-2">Loading alerts...</div>
             </div>
             <div class="notif-dropdown-footer">
-              <button id="go-inbox-btn" class="btn-link">Go to Inbox & Notifications →</button>
+              <button id="go-inbox-btn" class="btn-link">Go to Inbox & Notifications <i data-lucide="arrow-right" style="width: 14px; height: 14px; vertical-align: middle;"></i></button>
             </div>
           </div>
         </div>
 
         <div id="user-profile-wrapper" class="nav-dropdown-wrapper">
           <button id="user-profile-btn" class="user-profile-btn" title="Account Menu">
-            <span id="user-avatar-chip" class="avatar-chip">👤</span>
+            <span id="user-avatar-chip" class="avatar-chip"><i data-lucide="user" style="width: 14px; height: 14px;"></i></span>
             <span id="user-name-label" class="user-name-label">Account</span>
-            <span class="chevron">▾</span>
+            <span class="chevron"><i data-lucide="chevron-down" style="width: 12px; height: 12px;"></i></span>
           </button>
           <div id="user-profile-dropdown" class="nav-dropdown profile-dropdown hidden">
             <div id="profile-menu-header" class="profile-menu-header"></div>
             <div class="dropdown-divider"></div>
-            <button class="dropdown-item" id="pm-dashboard">👤 My Profile</button>
-            <button class="dropdown-item" id="pm-messages">📥 Inbox & Alerts</button>
-            <button class="dropdown-item" id="pm-status-toggle">🟢 Status: <span id="user-status-text">Available</span></button>
+            <button class="dropdown-item" id="pm-dashboard"><i data-lucide="user" style="width: 16px; height: 16px; margin-right: 8px;"></i> My Profile</button>
+            <button class="dropdown-item" id="pm-messages"><i data-lucide="inbox" style="width: 16px; height: 16px; margin-right: 8px;"></i> Inbox & Alerts</button>
+            <button class="dropdown-item" id="pm-status-toggle"><i data-lucide="circle-dot" style="width: 16px; height: 16px; margin-right: 8px;"></i> Status: <span id="user-status-text">Available</span></button>
             <div class="dropdown-divider"></div>
             <div id="pm-auth-action"></div>
           </div>

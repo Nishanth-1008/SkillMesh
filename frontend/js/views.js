@@ -9,7 +9,7 @@ Views.home = function (root) {
       <p>Describe your problem in plain language. SkillMesh discovers the right people,
       builds balanced teams, and surfaces opportunities across your community.</p>
       <div class="hero-actions">
-        <button class="btn btn-primary" id="cta-search">✦ Try AI Search</button>
+        <button class="btn btn-primary" id="cta-search"><i data-lucide="sparkles" style="width: 14px; height: 14px; margin-right: 4px;"></i> Try AI Search</button>
         <button class="btn" id="cta-teams">Build a Team</button>
         <button class="btn" id="cta-communities">Browse Communities</button>
       </div>
@@ -17,22 +17,22 @@ Views.home = function (root) {
     <div class="section-title">What makes SkillMesh different</div>
     <div class="grid">
       <div class="card">
-        <div class="card-icon">🗣️</div>
+        <div class="card-icon"><i data-lucide="message-square" style="width: 18px; height: 18px; vertical-align: middle;"></i></div>
         <h3>AI Community Search</h3>
         <p class="muted">Search using natural language instead of filters — describe the problem, not the profile.</p>
       </div>
       <div class="card">
-        <div class="card-icon">👥</div>
+        <div class="card-icon"><i data-lucide="users" style="width: 18px; height: 18px; vertical-align: middle;"></i></div>
         <h3>AI Team Builder</h3>
         <p class="muted">Describe a project goal. SkillMesh balances skills, availability, and prior collaborations.</p>
       </div>
       <div class="card">
-        <div class="card-icon">⭐</div>
+        <div class="card-icon"><i data-lucide="star" style="width: 18px; height: 18px; vertical-align: middle;"></i></div>
         <h3>Trust &amp; Reputation</h3>
         <p class="muted">Endorsements, badges, and contribution history influence every recommendation.</p>
       </div>
       <div class="card">
-        <div class="card-icon">🎯</div>
+        <div class="card-icon"><i data-lucide="target" style="width: 18px; height: 18px; vertical-align: middle;"></i></div>
         <h3>Opportunity Matching</h3>
         <p class="muted">Volunteer, mentorship, and event openings ranked by your skills and location.</p>
       </div>
@@ -126,7 +126,7 @@ Views.dashboard = async function (root) {
 
 function renderProfile(root, profile, editable) {
   const skillBadges = profile.skills.length
-    ? profile.skills.map((s) => `<span class="badge badge-skill">${s.skill} <span class="muted">(${s.level})</span>${editable ? ` <a href="#" data-remove="${s.id}" style="color:#ff8a8a;">✕</a>` : ''}</span>`).join(' ')
+    ? profile.skills.map((s) => `<span class="badge badge-skill">${s.skill} <span class="muted">(${s.level})</span>${editable ? ` <a href="#" data-remove="${s.id}" style="color:#ff8a8a;"><i data-lucide="x" style="width: 12px; height: 12px; vertical-align: middle;"></i></a>` : ''}</span>`).join(' ')
     : `<span class="muted">No skills listed yet.</span>`;
   const communityBadges = profile.communities.length
     ? profile.communities.map((c) => `<span class="badge">${c.name} <span class="muted">(${c.role})</span></span>`).join(' ')
@@ -142,13 +142,13 @@ function renderProfile(root, profile, editable) {
       <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
         <div>
           <h3 style="margin-bottom:4px;"><span class="avatar-chip">${(profile.name || '?').charAt(0).toUpperCase()}</span>${profile.name}</h3>
-          <p class="muted" style="margin:0;">📍 ${profile.location || 'No location set'} · ${profile.availability === 'available' ? '🟢' : '🟠'} ${profile.availability || 'unknown'}</p>
+          <p class="muted" style="margin:0;"><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${profile.location || 'No location set'} · ${profile.availability === 'available' ? '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--green); color: var(--green); display: inline-block; vertical-align: middle;"></i>' : '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--amber); color: var(--amber); display: inline-block; vertical-align: middle;"></i>'} ${profile.availability || 'unknown'}</p>
         </div>
         ${editable ? `
         <div style="display:flex; gap:8px; align-items:center;">
-          <button class="btn btn-primary" id="open-edit-profile-modal">✏️ Edit Profile</button>
-          <button class="btn" id="profile-inbox-btn">📥 Inbox & Alerts</button>
-          <button class="btn btn-danger" id="profile-logout-btn">🚪 Log out</button>
+          <button class="btn btn-primary" id="open-edit-profile-modal"><i data-lucide="edit-3" style="width: 14px; height: 14px; vertical-align: middle;"></i> Edit Profile</button>
+          <button class="btn" id="profile-inbox-btn"><i data-lucide="inbox" style="width: 14px; height: 14px; vertical-align: middle;"></i> Inbox & Alerts</button>
+          <button class="btn btn-danger" id="profile-logout-btn"><i data-lucide="log-out" style="width: 14px; height: 14px; vertical-align: middle;"></i> Log out</button>
         </div>` : ''}
       </div>
       <div class="trust-bar" style="margin-top:16px;">
@@ -236,7 +236,7 @@ function renderProfile(root, profile, editable) {
           </div>
         `;
 
-        App.openModal(modalHtml, '✏️ Edit Your Profile');
+        App.openModal(modalHtml, '<i data-lucide="edit-3" style="width: 14px; height: 14px; vertical-align: middle;"></i> Edit Your Profile');
 
         const modalContainer = document.getElementById('modal-container');
         const cancelBtn = modalContainer.querySelector('#cancel-edit-profile');
@@ -336,7 +336,7 @@ async function handleJoinCommunity(communityId, communityName, onSuccess) {
     if (res.requiresSwitch) {
       const modalContent = `
         <div class="info-box" style="margin-bottom:14px; border-color:var(--amber);">
-          ⚠️ You are currently an active member of <strong>${res.currentCommunity.name}</strong>.
+          <i data-lucide="alert-triangle" style="width: 14px; height: 14px; color: var(--amber); vertical-align: middle;"></i> You are currently an active member of <strong>${res.currentCommunity.name}</strong>.
         </div>
         <p>SkillMesh enforces <strong>1 active community</strong> per user. Joining <strong>${res.targetCommunity.name}</strong> will automatically switch your membership.</p>
         <p class="muted" style="font-size:12.5px;">Note: If your previous community has 0 remaining members, it will be automatically dissolved.</p>
@@ -345,7 +345,7 @@ async function handleJoinCommunity(communityId, communityName, onSuccess) {
           <button class="btn btn-primary" id="confirm-switch-btn">Switch Community</button>
         </div>
       `;
-      App.openModal(modalContent, '🔄 Switch Active Community');
+      App.openModal(modalContent, '<i data-lucide="refresh-cw" style="width: 14px; height: 14px; vertical-align: middle;"></i> Switch Active Community');
 
       const modalContainer = document.getElementById('modal-container');
       const cancelBtn = modalContainer.querySelector('#cancel-switch-btn');
@@ -597,7 +597,7 @@ function renderSearchResults(container, data) {
             <div class="result-rank">${i + 1}</div>
             <div>
               <strong style="cursor:pointer;" data-profile="${r.user.id}">${r.user.name}</strong>
-              <p class="muted" style="margin:4px 0;">📍 ${r.user.location || 'Location unknown'} · ${r.user.availability === 'available' ? '🟢' : '🟠'} ${r.user.availability}${r.trustScore != null ? ` · trust ${r.trustScore}` : ''}</p>
+              <p class="muted" style="margin:4px 0;"><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${r.user.location || 'Location unknown'} · ${r.user.availability === 'available' ? '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--green); color: var(--green); display: inline-block; vertical-align: middle;"></i>' : '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--amber); color: var(--amber); display: inline-block; vertical-align: middle;"></i>'} ${r.user.availability}${r.trustScore != null ? ` · trust ${r.trustScore}` : ''}</p>
               <div>${r.skills.map((s) => `<span class="badge ${(r.matchedSkills || []).includes(s) ? 'badge-matched' : 'badge-skill'}">${s}</span>`).join(' ')}</div>
             </div>
           </div>
@@ -862,7 +862,7 @@ Views.recommendations = async function (root) {
             <div class="result-main">
               <div>
                 <strong style="cursor:pointer;" data-profile="${r.user.id}">${r.user.name}</strong>
-                <p class="muted" style="margin:4px 0;">📍 ${r.user.location || '—'} · trust ${r.trustScore}</p>
+                <p class="muted" style="margin:4px 0;"><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${r.user.location || '—'} · trust ${r.trustScore}</p>
                 <div>${(r.skills || r.matchedSkills || r.teachable || []).slice(0, 6).map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ')}</div>
               </div>
             </div>
@@ -1097,8 +1097,8 @@ Views.messages = async function (root) {
         id: `notif-${n.id}`,
         type: 'notification',
         category: isAnnouncement ? 'updates' : 'updates', // Updates / Announcements
-        sender: isAnnouncement ? '📢 System' : '🔔 Alert',
-        avatar: isAnnouncement ? '📢' : '🔔',
+        sender: isAnnouncement ? '<i data-lucide="megaphone" style="width: 14px; height: 14px; vertical-align: middle;"></i> System' : '<i data-lucide="bell" style="width: 14px; height: 14px; vertical-align: middle;"></i> Alert',
+        avatar: isAnnouncement ? '<i data-lucide="megaphone" style="width: 14px; height: 14px; vertical-align: middle;"></i>' : '<i data-lucide="bell" style="width: 14px; height: 14px; vertical-align: middle;"></i>',
         title: n.title || 'System Notification',
         preview: n.body || '',
         createdAt: n.createdAt || new Date(),
@@ -1114,8 +1114,8 @@ Views.messages = async function (root) {
         id: `act-${a.id}`,
         type: 'activity',
         category: 'social', // Promotions / Social
-        sender: '🌱 Community',
-        avatar: '🤝',
+        sender: '<i data-lucide="sprout" style="width: 14px; height: 14px; vertical-align: middle;"></i> Community',
+        avatar: '<i data-lucide="users" style="width: 14px; height: 14px; vertical-align: middle;"></i>',
         title: 'Community Activity & Social',
         preview: a.summary || '',
         createdAt: a.createdAt || new Date(),
@@ -1180,20 +1180,20 @@ Views.messages = async function (root) {
               <p class="muted" style="margin:4px 0 0;">Manage direct communications, system announcements, and community activity.</p>
             </div>
             <div style="display:flex; gap:10px;">
-              <button class="btn btn-primary" id="mark-all-read-cta">✓ Mark All as Read</button>
+              <button class="btn btn-primary" id="mark-all-read-cta"><i data-lucide="check-check" style="width: 14px; height: 14px; margin-right: 4px;"></i> Mark All as Read</button>
             </div>
           </div>
 
           <!-- 1. Dedicated Tabs: Primary, Updates, Social -->
           <div class="inbox-tabs">
             <button class="inbox-tab ${currentTab === 'primary' ? 'active' : ''}" data-tab="primary">
-              💬 Primary ${primaryCount ? `<span class="badge badge-urgent">${primaryCount}</span>` : ''}
+              <i data-lucide="message-circle" style="width: 14px; height: 14px; vertical-align: middle;"></i> Primary ${primaryCount ? `<span class="badge badge-urgent">${primaryCount}</span>` : ''}
             </button>
             <button class="inbox-tab ${currentTab === 'updates' ? 'active' : ''}" data-tab="updates">
-              📢 Updates ${updatesCount ? `<span class="badge badge-urgent">${updatesCount}</span>` : ''}
+              <i data-lucide="megaphone" style="width: 14px; height: 14px; vertical-align: middle;"></i> Updates ${updatesCount ? `<span class="badge badge-urgent">${updatesCount}</span>` : ''}
             </button>
             <button class="inbox-tab ${currentTab === 'social' ? 'active' : ''}" data-tab="social">
-              🤝 Social & Promo ${socialCount ? `<span class="badge badge-urgent">${socialCount}</span>` : ''}
+              <i data-lucide="users" style="width: 14px; height: 14px; vertical-align: middle;"></i> Social & Promo ${socialCount ? `<span class="badge badge-urgent">${socialCount}</span>` : ''}
             </button>
           </div>
         </div>
@@ -1203,10 +1203,10 @@ Views.messages = async function (root) {
           <div class="filter-chips">
             <button class="filter-chip ${currentFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>
             <button class="filter-chip ${currentFilter === 'unread' ? 'active' : ''}" data-filter="unread">Unread</button>
-            <button class="filter-chip ${currentFilter === 'starred' ? 'active' : ''}" data-filter="starred">⭐ Starred</button>
+            <button class="filter-chip ${currentFilter === 'starred' ? 'active' : ''}" data-filter="starred"><i data-lucide="star" style="width: 18px; height: 18px; vertical-align: middle;"></i> Starred</button>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
-            <input type="text" class="input inbox-search-input" id="inbox-search" placeholder="🔍 Search messages..." value="${searchQuery}" />
+            <input type="text" class="input inbox-search-input" id="inbox-search" placeholder="Search messages..." value="${searchQuery}" />
           </div>
         </div>
 
@@ -1241,7 +1241,7 @@ Views.messages = async function (root) {
                       <div class="card-title">
                         ${!item.read ? '<span class="unread-indicator-dot" title="Unread"></span>' : ''}
                         <span>${item.title}</span>
-                        ${item.starred ? '<span style="color:var(--amber);">⭐</span>' : ''}
+                        ${item.starred ? '<span style="color:var(--amber);"><i data-lucide="star" style="width: 18px; height: 18px; vertical-align: middle;"></i></span>' : ''}
                       </div>
                       <p class="card-preview">${item.preview || 'No text preview available.'}</p>
                     </div>
@@ -1250,9 +1250,9 @@ Views.messages = async function (root) {
                     <div class="card-top-right">
                       <span class="card-timestamp">${formatRelativeTime(item.createdAt)}</span>
                       <div class="card-action-bar">
-                        <button class="card-action-btn" data-act="star" data-id="${item.id}" title="Star/Unstar">${item.starred ? '★' : '☆'}</button>
-                        <button class="card-action-btn" data-act="read" data-id="${item.id}" title="${item.read ? 'Mark Unread' : 'Mark Read'}">${item.read ? '✉️' : '📩'}</button>
-                        <button class="card-action-btn" data-act="delete" data-id="${item.id}" title="Delete/Archive">🗑️</button>
+                        <button class="card-action-btn" data-act="star" data-id="${item.id}" title="Star/Unstar">${item.starred ? '<i data-lucide="star" style="width: 14px; height: 14px; fill: var(--amber); color: var(--amber); vertical-align: middle;"></i>' : '<i data-lucide="star" style="width: 14px; height: 14px; vertical-align: middle;"></i>'}</button>
+                        <button class="card-action-btn" data-act="read" data-id="${item.id}" title="${item.read ? 'Mark Unread' : 'Mark Read'}">${item.read ? '<i data-lucide="mail-open" style="width: 14px; height: 14px; vertical-align: middle;"></i>' : '<i data-lucide="mail" style="width: 14px; height: 14px; vertical-align: middle;"></i>'}</button>
+                        <button class="card-action-btn" data-act="delete" data-id="${item.id}" title="Delete/Archive"><i data-lucide="trash-2" style="width: 14px; height: 14px; vertical-align: middle;"></i></button>
                       </div>
                     </div>
                   </div>

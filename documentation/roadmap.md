@@ -1,5 +1,20 @@
 # Roadmap
 
+## Current status (as of the latest build)
+
+| Phase | Name | Status | Notes |
+|---|---|---|---|
+| 1 | Foundation | ✅ Demo-complete | Heuristic AI; see `usage_guide.md` |
+| 2 | Intelligent Collaboration | ✅ Demo-complete | Team builder, projects, trust, messaging |
+| 3 | Community Intelligence | ✅ Demo-complete | Analytics, events, gamification, admin |
+| 4 | Community Ecosystem | 🟡 Demo + stubs | Integrations/webhooks egress stubbed |
+| 5 | Global Intelligence | 🟡 Demo heuristics | Reasoning, passport, SDG, scenarios |
+| 6 | Autonomous Community Intelligence | 🟡 Demo rule-agents | Agents, digital twin, OS pulse |
+
+> ✅ = implemented and testable in the current demo build · 🟡 = core loop works, production-grade depth pending. The lists below are the full product vision; items marked **✓** are already implemented (demo-grade), **~** items are partial or production depth pending. See `next_steps.md` for the productionization plan.
+
+---
+
 ## Phase 1 — Foundation
 
 ### Core Infrastructure
@@ -75,14 +90,14 @@
 
 ### MVP Completion Criteria
 
-* Users can create profiles.
-* Users can join communities.
-* Skills are stored and linked.
-* Knowledge graph is generated.
-* Users describe a problem in natural language.
-* AI recommends relevant people.
-* Interactive graph visualizes relationships.
-* End-to-end system functions reliably.
+- ✓ Users can create profiles.
+- ✓ Users can join communities.
+- ✓ Skills are stored and linked.
+- ✓ Knowledge graph is generated.
+- ✓ Users describe a problem in natural language.
+- ✓ AI recommends relevant people.
+- ✓ Interactive graph visualizes relationships.
+- ✓ End-to-end system functions reliably.
 
 
 ---
@@ -159,13 +174,13 @@
 
 ### MVP Completion Criteria
 
-* AI builds balanced teams from natural language goals.
-* Users can create and manage collaborative projects.
-* Smart recommendations surface relevant people and opportunities.
-* Trust and reputation influence recommendations.
-* Organizations can recruit members and volunteers.
-* Teams can communicate and collaborate within the platform.
-* AI predicts strong collaborations and suggests hidden experts.
+- ✓ AI builds balanced teams from natural language goals.
+- ✓ Users can create and manage collaborative projects.
+- ✓ Smart recommendations surface relevant people and opportunities.
+- ✓ Trust and reputation influence recommendations.
+- ✓ Organizations can recruit members and volunteers.
+- ✓ Teams can communicate and collaborate within the platform.
+- ✓ AI predicts strong collaborations and suggests hidden experts.
 
 ---
 
@@ -254,13 +269,13 @@
 
 ### MVP Completion Criteria
 
-* Communities gain actionable insights through AI-powered analytics.
-* Skill gaps and hidden opportunities are automatically identified.
-* Community health and engagement are measurable.
-* Organizations receive intelligent reports and recommendations.
-* Events and initiatives are managed efficiently.
-* Gamification encourages long-term participation.
-* Administrators have complete visibility and moderation capabilities.
+- ✓ Communities gain actionable insights through AI-powered analytics.
+- ✓ Skill gaps and hidden opportunities are automatically identified.
+- ✓ Community health and engagement are measurable.
+- ✓ Organizations receive intelligent reports and recommendations.
+- ✓ Events and initiatives are managed efficiently.
+- ✓ Gamification encourages long-term participation.
+- ✓ Administrators have complete visibility and moderation capabilities.
 
 ---
 ## Phase 4 — Community Ecosystem
@@ -348,13 +363,13 @@
 
 ### MVP Completion Criteria
 
-* Multiple communities can collaborate seamlessly.
-* External services integrate with SkillMesh.
-* Emergency response workflows are operational.
-* AI automates routine community management.
-* Developers can extend the platform through APIs and plugins.
-* The platform supports global, accessible, and production-scale deployments.
-* SkillMesh functions as a scalable community intelligence ecosystem.
+- ✓ Multiple communities can collaborate seamlessly (federation rows + partnerships).
+- ~ External services integrate with SkillMesh (config stored; HTTP egress stubbed).
+- ✓ Emergency response workflows are operational (open → rank responders → respond / resolve).
+- ✓ AI automates routine community management (rule-based agents).
+- ✓ Developers can extend the platform through APIs and plugins (API keys, webhooks, marketplace).
+- ~ The platform supports global, accessible, and production-scale deployments (next_steps.md Waves 1–5).
+- ~ SkillMesh functions as a scalable community intelligence ecosystem.
 
 ---
 
@@ -443,12 +458,12 @@
 
 ### Vision Completion Criteria
 
-* Every community contributes to a global knowledge network.
-* AI evolves from recommending people to intelligently guiding communities.
-* Verified digital identities and skills are portable across communities.
-* Governments, NGOs, schools, and organizations collaborate on a shared platform.
-* Communities make proactive, data-driven decisions using predictive intelligence.
-* SkillMesh becomes the global operating system for community collaboration and social impact.
+- ~ Every community contributes to a global knowledge network (network view live; real sync pending).
+- ~ AI evolves from recommending people to intelligently guiding communities (multi-step reasoning live).
+- ✓ Verified digital identities and skills are portable across communities (skill passport).
+- ~ Governments, NGOs, schools, and organizations collaborate on a shared platform (org workspaces live).
+- ✓ Communities make proactive, data-driven decisions using predictive intelligence (forecasts, scenarios).
+- ~ SkillMesh becomes the global operating system for community collaboration and social impact.
 
 ---
 
@@ -537,10 +552,10 @@
 
 ### Vision Completion Criteria
 
-* AI agents autonomously manage routine community operations.
-* Every community has a live digital twin for planning and simulation.
-* Teams, projects, and opportunities are created and coordinated automatically.
-* Communities preserve and grow collective knowledge over time.
-* SkillMesh evolves into an autonomous, self-improving community operating system that empowers communities worldwide.
+- ✓ AI agents autonomously manage routine community operations (6 rule-based agents).
+- ✓ Every community has a live digital twin for planning and simulation.
+- ✓ Teams, projects, and opportunities are created and coordinated automatically (auto-form teams).
+- ✓ Communities preserve and grow collective knowledge over time (community memory + brainstorm).
+- ~ SkillMesh evolves into an autonomous, self-improving community operating system that empowers communities worldwide (agents remain rule-based; see `next_steps.md`).
 
 **Vision:** Every community, no matter how small, can instantly discover its hidden talent, solve problems faster, and grow together through a living AI-powered knowledge network.

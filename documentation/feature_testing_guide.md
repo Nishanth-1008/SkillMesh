@@ -2,6 +2,8 @@
 
 This guide provides an exhaustive, element-by-element test protocol covering **every page, feature, modal, and button** across all **Phases 1–6** of SkillMesh.
 
+> Element IDs below are the **current** ones in `frontend/index.html`, `frontend/js/views.js`, `frontend/js/views-advanced.js`, and `frontend/js/app.js`. Automated backend suites live in `backend/src/tests/run_tests.js` (8 suites).
+
 ---
 
 ## 1. Global Navigation & Layout Controls
@@ -11,23 +13,24 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 | Component | Element / Target | Test Action | Expected Outcome |
 |---|---|---|---|
 | **Brand Logo** | `.brand` / `SkillMesh` | Click logo | Navigates to `#home`. |
-| **Sidebar Toggle** | `#sidebar-toggle` (Hamburger `☰`) | Click button | Toggles `#sidebar` sliding in/out with dark overlay. |
-| **Sidebar Links** | Nav buttons inside `#sidebar` | Click any route link | Navigates to target hash, auto-closes mobile sidebar drawer. |
-| **Global Search** | `#global-search-input` | Type query (e.g., `robotics`) | Shows dropdown results dynamically. Pressing `Enter` navigates to `#search?q=robotics`. |
-| **Theme Toggle** | `#theme-toggle` (☀️ / 🌙) | Click button | Toggles `data-theme="light"` and `data-theme="dark"` on `<html>`. Persists preference to `localStorage`. |
-| **Quick Action Dropdown** | `#quick-action-btn` (`+ Quick Action`) | Click button | Toggles dropdown menu containing 4 action items. |
-| **Quick Action** | `#qa-create-community` | Click item | Navigates to `#communities` and focuses community creation form. |
+| **Sidebar Toggle** | `#sidebar-toggle` (Hamburger `☰`) | Click button | Toggles `#sidebar` sliding in/out with `#sidebar-overlay`. |
+| **Sidebar Links** | Nav buttons inside `#navlinks` | Click any route link | Navigates to target hash, auto-closes mobile sidebar drawer. |
+| **Global Search** | `#global-search-input` | Type query (e.g. `robotics`) | Debounced dropdown `#global-search-results` shows matching communities + platform quick links (AI Team Builder, Full AI Search). Click a result to navigate. Click outside to dismiss. |
+| **Theme Toggle** | `#theme-toggle` (☀️ / 🌙) | Click button | Toggles `data-theme="light"` / `data-theme="dark"` on `<html>`. Persists `skillmesh_theme` to `localStorage`, shows toast. |
+| **Quick Action Dropdown** | `#quick-action-btn` (`+ Quick Action`) | Click button | Toggles `#quick-action-dropdown` containing 4 action items. |
+| **Quick Action** | `#qa-create-community` | Click item | Navigates to `#communities` (create form). |
 | **Quick Action** | `#qa-assemble-team` | Click item | Navigates directly to `#teams` (AI Team Builder). |
-| **Quick Action** | `#qa-invite-members` | Click item | Prompts member invitation modal / navigates to active project. |
+| **Quick Action** | `#qa-invite-members` | Click item | Navigates to `#projects` (invite controls live in project detail). |
 | **Quick Action** | `#qa-log-impact` | Click item | Opens **🌱 Log SDG Impact Contribution** global modal. |
-| **Notification Bell** | `#notif-bell-btn` (`🔔`) | Click bell | Opens notification inbox dropdown showing unread count badge. |
-| **Notification Action** | `#notif-mark-all-fast` | Click `Mark all read` | Clears unread badge count to 0, triggers OS notification clear, displays Toast banner with **Undo** button. |
+| **Notification Bell** | `#notif-bell-btn` (`🔔`) | Click bell | Opens `#notif-dropdown` with unread count badge `#notif-badge`. |
+| **Notification Action** | `#notif-mark-all-fast` | Click `Mark all read` | Clears unread badge to 0, shows toast with **Undo** (markAllNotificationsReadWithUndo). |
 | **Notification Action** | `#go-inbox-btn` | Click `Go to Inbox & Notifications →` | Navigates to `#messages`. |
-| **Account Menu** | `#user-profile-btn` (`Account`) | Click button | Toggles user profile menu. |
-| **Account Dropdown** | `#pm-dashboard` | Click `My Profile` | Navigates to `#dashboard`. |
-| **Account Dropdown** | `#pm-messages` | Click `Inbox & Alerts` | Navigates to `#messages`. |
-| **Account Dropdown** | `#pm-status-toggle` | Click `Status: Available / Busy` | Toggles availability state on server and updates status pill. |
-| **Account Dropdown** | `#logout` | Click `Log out` | Clears local JWT token, resets session store, and redirects to `#home`. |
+| **Account Menu** | `#user-profile-btn` (`Account`) | Click button | Toggles `#user-profile-dropdown`. |
+| **Account Dropdown** | `#pm-dashboard` | Click `My Profile` | Navigates to `#dashboard` (or `#login` when logged out). |
+| **Account Dropdown** | `#pm-messages` | Click `Inbox & Alerts` | Navigates to `#messages` (or `#login` when logged out). |
+| **Account Dropdown** | `#pm-status-toggle` | Click `Status: Available / Busy` | Toggles availability state in session store, updates `#user-status-text`, shows toast. |
+| **Account Dropdown** | `#pm-logout` | Click `Log out` | Clears local JWT token, resets session store, refreshes nav, redirects to `#home`. |
+| **Account Dropdown** | `#pm-login` | Click `Log in` (guest mode) | Navigates to `#login`. |
 
 ---
 
@@ -41,11 +44,10 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Hero Banner | `Get Started` / `Explore Communities` | Click button | Navigates to `#communities`. |
-| Hero Banner | `AI Search` / `Find Skills` | Click button | Navigates to `#search`. |
-| Feature Cards | `Assemble Team` button | Click button | Navigates to `#teams`. |
-| Feature Cards | `Global Mesh` button | Click button | Navigates to `#intelligence`. |
-| Feature Cards | `Autonomous Agents` button | Click button | Navigates to `#autonomy`. |
+| Hero Banner | `#cta-search` (`✦ Try AI Search`) | Click button | Navigates to `#search`. |
+| Hero Banner | `#cta-teams` (`Build a Team`) | Click button | Navigates to `#teams`. |
+| Hero Banner | `#cta-communities` (`Browse Communities`) | Click button | Navigates to `#communities`. |
+| Feature Cards | 4 cards (AI Search, Team Builder, Trust, Opportunities) | Inspect | Static informational cards. |
 
 ---
 
@@ -57,9 +59,9 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 |---|---|---|---|
 | Credentials Form | Email (`#email`) | Type `raj@example.com` | Input updates. |
 | Credentials Form | Password (`#password`) | Type `password123` | Input updates masked. |
-| Action | `Log in` (`#login-submit`) | Click button | Authenticates with POST `/api/auth/login`, stores JWT token in `localStorage`, refreshes topbar user chip, navigates to `#dashboard`. |
-| Validation | `Log in` | Submit with blank fields | Displays red `.error-box` error banner. |
-| Footer Link | `Don't have an account? Register` | Click link | Navigates to `#register`. |
+| Action | `Log in` (`#submit`) | Click button | Authenticates with POST `/api/auth/login`, stores JWT token in `localStorage`, refreshes topbar user chip, navigates to `#dashboard`. |
+| Validation | `Log in` | Submit with blank fields | Displays red `.error-box` banner in `#msg`. |
+| Footer Link | `Register` (`#go-register`) | Click link | Navigates to `#register`. |
 
 ---
 
@@ -71,10 +73,12 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 |---|---|---|---|
 | Registration Form | Name (`#name`) | Type `Aarav Sharma` | Input updates. |
 | Registration Form | Email (`#email`) | Type `aarav@example.com` | Input updates. |
-| Registration Form | Password (`#password`) | Type `password123` | Input updates. |
+| Registration Form | Password (`#password`) | Type `password123` | Input updates masked. |
 | Registration Form | Location (`#location`) | Type `Greenwood Sector 3` | Input updates. |
-| Registration Form | Skills (`#skills`) | Type `python, machine learning, teaching` | Comma-separated skill list parsed. |
-| Action | `Create account` | Click button | Calls POST `/api/auth/register`, initializes user & graph nodes, logs in automatically. |
+| Action | `Register` (`#submit`) | Click button | Calls POST `/api/auth/register`, initializes user & graph nodes, logs in automatically. |
+| Footer Link | `Log in` (`#go-login`) | Click link | Navigates to `#login`. |
+
+> Note: skills are not collected at registration — add them later via `#dashboard` (Edit Profile → skill adder).
 
 ---
 
@@ -84,25 +88,35 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Profile Header | Availability Dropdown | Change selection (`available` ↔ `busy`) | Updates availability pill instantly via API. |
-| Edit Section | Bio Textarea (`#bio`) | Type `Community robotics enthusiast` | Text input updates. |
-| Edit Section | Interests Input | Type `AI, Renewable Energy` | Updates user interests array. |
-| Action | `Save changes` | Click button | Sends PUT `/api/profiles/me`, updates profile, displays green `.success-box`. |
-| My Skills | `+ Add Skill` | Type `robotics` and select level `expert` | Adds new skill node to graph, updates user skill list. |
+| Profile Header | `#open-edit-profile-modal` (`✏️ Edit Profile`) | Click button | Opens the edit-profile modal. |
+| Profile Header | `#profile-inbox-btn` (`📥 Inbox & Alerts`) | Click button | Navigates to `#messages`. |
+| Profile Header | `#profile-logout-btn` (`🚪 Log out`) | Click button | Clears token, returns to `#home`. |
+| Edit Modal | Name (`#edit-name`) | Edit value | Prepares profile payload. |
+| Edit Modal | Location (`#edit-location`) | Edit value | Prepares profile payload. |
+| Edit Modal | Availability (`#edit-availability`) | Select `busy` | Prepares availability change. |
+| Edit Modal | Bio (`#edit-bio`) | Type `Community robotics enthusiast` | Text input updates. |
+| Edit Modal | Interests (`#edit-interests`) | Type `AI, Renewable Energy` | Updates user interests array. |
+| Edit Modal | Skill adder `#modal-skill-name` + `#modal-skill-level` + `#modal-add-skill-btn` | Type `robotics`, level `expert`, click `+ Add Skill` | Adds new skill node to graph, updates user skill list (`#modal-skill-msg`). |
+| Edit Modal | `#save-edit-profile` (`Save Profile`) | Click button | Sends PUT `/api/profiles/me`, updates profile, displays success in `#profile-modal-msg`. |
+| Edit Modal | `#cancel-edit-profile` (`Cancel`) | Click button | Closes modal without saving. |
+| Skills List | Skill badge `✕` (`[data-remove]`) | Click remove link | Removes the skill from the user profile. |
+| Endorse Someone | `#endorse-user`, `#endorse-skill`, `#endorse-note`, `#endorse-btn` | Fill & submit | Calls POST `/api/trust/endorse`, shows result in `#endorse-msg`. |
 
 ---
 
 ### Page 5: Public User Profile (`#profile?id=<USER_ID>`)
-* **URL**: `http://localhost:8080/#profile?id=a2840062-6a7f-4ab8-804c-63745fbfa23d`
+* **URL**: `http://localhost:8080/#profile?id=<ID>`
 * **Purpose**: View member credentials, trust metrics, and endorse skills.
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Profile Header | `Send Message` | Click button | Navigates to `#messages` with recipient auto-selected. |
-| Trust Score | Endorsement Rating | Inspect score bar | Displays trust score calculated from endorsements and contributions. |
-| Endorse Skill | Skill Dropdown (`#skill-select`) | Select `programming` | Dropdown value selected. |
-| Endorse Skill | Note Input (`#endorse-note`) | Type `Great collaborator on hackathon project` | Note input captured. |
-| Endorse Action | `Endorse Skill` | Click button | Calls POST `/api/trust/endorse`, increments skill score, adds entry to audit log. |
+| Profile Header | Trust score bar | Inspect `.trust-bar` | Displays trust score calculated from endorsements and contributions. |
+| Profile Header | Skills / Communities / Badges / Endorsements | Inspect cards | Renders profile data; community & member names are clickable (navigate to targets). |
+| Endorse (other user) | `#endorse-skill` | Select/type `programming` | Input captured. |
+| Endorse (other user) | `#endorse-note` | Type `Great collaborator on hackathon project` | Note input captured. |
+| Endorse Action | `Endorse` (`#endorse-btn`) | Click button | Calls POST `/api/trust/endorse`, increments skill score, shows confirmation in `#endorse-msg`. |
+
+> Reach other profiles from anywhere via clickable `[data-profile]` badges (search results, community members, project members, leaderboard).
 
 ---
 
@@ -112,22 +126,26 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Create Section | Name (`#comm-name`) | Type `Greenwood Tech Club` | Name input captured. |
-| Create Section | Description (`#comm-desc`) | Type `Local tech makers and hackers` | Description captured. |
-| Create Action | `Create community` | Click button | Calls POST `/api/communities`, creates community, owner auto-joined, refreshes community grid. |
-| Community Cards | `View community` | Click button on a community card | Navigates to `#community?id=<ID>`. |
+| Search | `#q` + `#search-btn` | Type `Greenwood`, click `Search` | Filters community grid in `#list`. |
+| Create Section | Name (`#new-name`) | Type `Greenwood Tech Club` | Name input captured. |
+| Create Section | Description (`#new-desc`) | Type `Local tech makers and hackers` | Description captured. |
+| Create Action | `Create` (`#create-btn`) | Click button | Calls POST `/api/communities`, creates community, owner auto-joined, refreshes grid (`#create-msg`). |
+| Community Cards | Card buttons | Click on a community card | Navigates to `#community?id=<ID>`. |
 
 ---
 
 ### Page 7: Community Detail Workspace (`#community?id=<ID>`)
-* **URL**: `http://localhost:8080/#community?id=e7597424-4b16-4713-89ad-5caada3810ef`
+* **URL**: `http://localhost:8080/#community?id=<ID>`
 * **Purpose**: Hub for community graph, members, projects, and knowledge base.
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Actions Bar | `Join community` / `Leave` | Click button | Calls POST `/api/communities/:id/join` or `/leave`, updates membership state. |
-| Knowledge Graph | Graph SVG (`svg.graph-svg`) | Drag nodes or click node | Interactive graph physics simulation highlights node connections. |
-| Members Grid | Member Chips (`[data-profile]`) | Click user badge | Navigates to target user's `#profile?id=<ID>`. |
+| Actions Bar | `#join` / `#leave` | Click button | Calls POST `/api/communities/:id/join` or `/leave`, updates membership state. |
+| Actions Bar | `#search-here` | Click button | Navigates to `#search` scoped to this community. |
+| Actions Bar | `#team-here` | Click button | Navigates to `#teams` scoped to this community. |
+| Actions Bar | `#analytics-here` | Click button | Navigates to `#analytics` with community pre-selected. |
+| Knowledge Graph | Graph SVG in `#graph-container` | Drag nodes or click node | Interactive concentric SVG graph highlights node connections. |
+| Members Grid | Member badges (`[data-profile]`) | Click user badge | Navigates to target user's `#profile?id=<ID>`. |
 
 ---
 
@@ -137,9 +155,9 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Search Form | Query Input (`#search-input`) | Type `need someone who knows first aid and plumbing` | Search string entered. |
-| Action | `Search` (`#search-btn`) | Click button | Calls GET `/api/search?q=...`, displays ranked results with similarity scores. |
-| Filter Tabs | `All` / `People` / `Emergency` | Click filter tab | Filters result rows by entity type. |
+| Search Form | Query Input (`#query`) | Type `need someone who knows first aid and plumbing` | Search string entered. |
+| Action | `Search` (`#run`) | Click button | Calls GET `/api/search?q=...`, displays ranked results in `#results` with match scores, matched skills, and clickable member names. |
+| Results | Person names / profile links | Click a result | Navigates to `#profile?id=<ID>`. |
 
 ---
 
@@ -149,28 +167,31 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Setup Form | Goal Input (`#team-goal`) | Type `Build civic emergency alerting app` | Goal string entered. |
-| Setup Form | Skills Select (`#team-skills`) | Select `programming`, `design`, `first aid` | Selected skill chips rendered. |
-| Action | `Assemble Optimal Team` | Click button | Calls POST `/api/teams/build`, displays recommended team, trust score matrix, and skill coverage graph. |
-| Team Results | `Create Project from Team` | Click button | Pre-fills new project form with team members and navigates to `#projects`. |
+| Setup Form | Goal Input (`#goal`) | Type `Build civic emergency alerting app` | Goal string entered. |
+| Setup Form | `#create-project` checkbox | Check (logged in) | Also creates a project & invites the built team. |
+| Action | `Build team` (`#run`) | Click button | Calls POST `/api/teams/build`, displays recommended team with skill coverage and success prediction in `#results`. |
+| Team Results | Member names | Click a member | Navigates to member profile. |
 
 ---
 
 ### Page 10: Projects List & Workspace (`#projects`, `#project?id=<ID>`)
-* **URL**: `http://localhost:8080/#project?id=<ID>`
+* **URL**: `http://localhost:8080/#projects`
 * **Purpose**: Manage collaborative projects, member invitations, and chat.
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Project Creation | Title (`#proj-title`) | Type `Solar Lighting Drive` | Prepares project creation payload. |
-| Project Creation | `Create Project` | Click button | Sends POST `/api/projects`, adds project to list. |
-| Project Detail | `Accept invite` (`#accept`) | Click button | Calls POST `/api/projects/:id/respond` (approve), re-renders project view, displays team discussion. |
-| Project Detail | `Decline` (`#decline`) | Click button | Calls POST `/api/projects/:id/respond` (decline), re-renders view. |
-| Project Detail | `Request to join` (`#request`) | Click button | Sends join request to project owner. |
-| Owner Tools | `Approve` / `Reject` | Click on member request | Approves or rejects applicant, updates member list. |
+| Project Creation | Title (`#title`) | Type `Solar Lighting Drive` | Prepares project creation payload. |
+| Project Creation | Description (`#desc`) | Type goal | Prepares payload. |
+| Project Creation | Timeline (`#timeline`) | Type `2026-08-15 to 2026-08-17` | Optional, prepends timeline. |
+| Project Creation | `Create` (`#create`) | Click button | Sends POST `/api/projects`, adds project to `#list`. |
+| Project Detail | `#accept` | Click button | Calls POST `/api/projects/:id/respond` (approve), re-renders project view, displays team discussion. |
+| Project Detail | `#decline` | Click button | Calls POST `/api/projects/:id/respond` (decline), re-renders view. |
+| Project Detail | `#request` | Click button | Sends join request to project owner. |
+| Owner Tools | Invite `#invite-id` + `#invite-btn` | Enter user ID, click `Send invite` | Sends project invite (`#invite-msg`). |
+| Owner Tools | Member requests | Click approve/reject controls | Approves or rejects applicant, updates member list. |
 | Discussion | Message Input (`#msg-body`) | Type `Meeting scheduled for 5 PM` | Input captured. |
-| Discussion | `Post as announcement` | Check checkbox (owners only) | Flags message as announcement. |
-| Discussion | `Send` (`#send-msg`) | Click button | Sends POST `/api/projects/:id/messages`, appends message to discussion thread. |
+| Discussion | `#announce` checkbox | Check (owners only) | Flags message as announcement. |
+| Discussion | `Send` (`#send-msg`) | Click button | Sends POST `/api/projects/:id/messages`, appends message to `#discussion`. |
 
 ---
 
@@ -180,8 +201,8 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Category Cards | `Connect` / `View Profile` | Click button | Navigates to recommended user profile. |
-| Opportunity Cards | `Apply Now` | Click button | Submits volunteer application. |
+| Category Cards | Recommendation rows in `#recs` | Inspect | Mentors, volunteers, similar people, and nearby contributors with match reasons. |
+| Person Rows | Clickable member names | Click | Navigates to recommended user profile. |
 
 ---
 
@@ -191,21 +212,28 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Create Form | Role Title (`#opp-title`) | Type `Community Web Developer` | Form input. |
-| Create Action | `Post Opportunity` | Click button | Posts new opportunity via `/api/opportunities`. |
-| Opportunity Detail | `Apply for Opportunity` | Click button | Submits user application, shows pending badge. |
+| Filter | Type (`#type-filter`) + `#refresh` | Select type, click `Filter` | Filters the `#list` grid. |
+| Create Form | Type (`#new-type`) | Select `volunteer` | Form input. |
+| Create Form | Title (`#new-title`) | Type `Community Web Developer` | Form input. |
+| Create Form | Description (`#new-desc`) | Type details | Skills auto-extracted. |
+| Create Action | `Post` (`#create`) | Click button | Posts new opportunity via `/api/opportunities` (`#create-msg`). |
+| Opportunity Detail | `#apply` | Click button | Submits user application, shows pending badge. |
 
 ---
 
 ### Page 13: Inbox & Messaging (`#messages`)
 * **URL**: `http://localhost:8080/#messages`
-* **Purpose**: Unified inbox for direct messages and system alerts.
+* **Purpose**: Unified inbox for notifications/activity and direct messages.
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Direct Chat | Recipient Dropdown | Select user (e.g. `Sneha Iyer`) | Loads active conversation. |
-| Message Box | Body Input (`#chat-input`) | Type `Hello Sneha, welcome to the team!` | Input typed. |
-| Action | `Send Message` | Click button | Calls POST `/api/messages`, updates chat log in real time. |
+| Inbox | `#mark-all-read-cta` | Click button | Marks all notifications read. |
+| Inbox | `#inbox-search` | Type keyword | Filters inbox entries. |
+| Inbox | `#bulk-mark-read` / `#bulk-clear` | Select rows, click | Marks or clears selected entries. |
+| Inbox | `#inbox-stream` rows | Inspect | Renders notifications + activity feed with timestamps. |
+| Direct Chat | Recipient (`#dm-to`) | Enter user ID (e.g. from a profile URL) | Loads active conversation. |
+| Message Box | Body (`#dm-body`) | Type `Hello Sneha, welcome to the team!` | Input typed. |
+| Action | `Send Direct Message` (`#dm-send`) | Click button | Calls POST `/api/messages`, appends to chat log (`#dm-msg`). |
 
 ---
 
@@ -215,19 +243,22 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Create Form | Org Name (`#org-name`) | Type `Greenwood Eco Club` | Form input. |
-| Create Action | `Register Organization` | Click button | Calls POST `/api/organizations`, creates workspace. |
+| Create Form | Name (`#name`) | Type `Greenwood Eco Club` | Form input. |
+| Create Form | Type (`#type`) | Select `ngo` / `school` / `club` | Form input. |
+| Create Form | Description (`#desc`) | Type mission | Form input. |
+| Create Action | `Create` (`#create`) | Click button | Calls POST `/api/organizations`, creates workspace in `#list`. |
 
 ---
 
 ### Page 15: Intel & Community Analytics (`#analytics`)
 * **URL**: `http://localhost:8080/#analytics`
-* **Purpose**: Health index, skill gaps, and leadership predictions.
+* **Purpose**: Health index, skill gaps, forecasts, and leadership predictions.
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Community Selector | Select Box | Choose `Greenwood Residents Community` | Calls GET `/api/analytics/community/:id`, renders charts and health metrics. |
-| Analytics Card | `Export Analytics` | Click button | Exports JSON/CSV analytics snapshot. |
+| Community Selector | `#cid` select box | Choose `Greenwood Residents Community` | Sets community for analysis. |
+| Action | `#load` (`Load dashboard`) | Click button | Calls GET `/api/analytics/community/:id`, renders `#dash`: health index, member metrics, milestones, skill gaps, forecast + crisis risks, emerging leaders. |
+| Personalized Insights | Insights card | Inspect (logged in) | Shows trust score, insight messages, and learning recommendations. |
 
 ---
 
@@ -237,12 +268,13 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Create Event | Event Name (`#event-name`) | Type `First-Aid Certification Workshop` | Prepares event creation. |
-| Create Action | `Create Event` | Click button | Sends POST `/api/events`, displays in event list. |
-| Event Detail | `RSVP / Register` | Click button | Registers user for event, increments attendee count. |
-| Event Detail | `Check-in` | Click button | Marks user attendance status as `checked_in`. |
-| Impact Report | Metric & Value (`#impact-val`) | Type `20` (people trained) | Prepares impact record. |
-| Impact Action | `Submit Impact Report` | Click button | Saves impact report, updates community resilience metrics. |
+| Create Event | Title (`#title`) | Type `First-Aid Certification Workshop` | Prepares event creation. |
+| Create Event | Description (`#desc`) + Community (`#cid`) | Fill fields | Prepares payload. |
+| Create Action | `Save Event` (`#create`) | Click button | Sends POST `/api/events`, displays in `#list`. |
+| Event Bar | Tabs `[data-filter]` (All / Upcoming / Completed) | Click tab | Filters the events grid. |
+| Event Detail | `#reg` (`Register`) | Click button | Registers user for event, increments attendee count. |
+| Impact Report | Summary (`#impact-summary`), People (`#impact-people`), Hours (`#impact-hours`) | Fill fields | Prepares impact record. |
+| Impact Action | `#impact-btn` (`Submit & complete event`) | Click button | Saves impact report, completes event, updates community resilience metrics (`#impact-msg`). |
 
 ---
 
@@ -252,7 +284,9 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Rankings Table | Filter Tabs (`All` / `Points`) | Click tab | Re-orders user rankings by reward points. |
+| Your Rewards (logged in) | Points + achievement badges | Inspect | Shows `points.balance` and unlocked achievement badges. |
+| Rankings Table | Leaderboard rows | Inspect | Rows show rank, member name, achievement count, contribution points, and total score. |
+| Rankings Table | Member names | Click | Navigates to member profile. |
 
 ---
 
@@ -262,18 +296,27 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Moderation Log | Audit Trail Table | Inspect rows | Displays system events, endorsements, and status changes. |
-| User List | `Ban / Suspend` / `Promote` | Click action button | Updates user role/permissions in database. |
+| Members | Member badges (`[data-p]`) | Click badge | Navigates to member profile. |
+| Moderate | Action (`#mod-action`) | Select `close_opportunity` / `archive_project` | Sets moderation action. |
+| Moderate | Target (`#mod-target`) + Reason (`#mod-reason`) | Enter target ID & reason | Prepares moderation payload. |
+| Moderate | `Apply` (`#mod-btn`) | Click button | Applies moderation via `/api/gamification/admin/*`, refreshes page (`#mod-msg`). |
+| Audit Log | Audit entries card | Inspect | Displays recent system events with timestamps. |
+| Open Reports | Reports card | Inspect | Lists reported opportunities/projects with status. |
 
 ---
 
 ### Page 19: Public Community Hub (`#hub`)
 * **URL**: `http://localhost:8080/#hub`
-* **Purpose**: Public showcase of active communities and shared resources.
+* **Purpose**: Public showcase of active communities, federations, and shared opportunities.
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Directory | Community Cards | Click card | Navigates to public overview of community. |
+| Directory | Community cards (`[data-c]`) | Click `Open community` | Navigates to public community overview. |
+| Federation | Federation badges + partnership rows | Inspect | Shows federation links and partnership status. |
+| Partnerships | `Accept` (`[data-accept-p]`) | Click (pending partnership) | Accepts partnership, refreshes hub. |
+| Propose (logged in) | `#from-c` + `#to-c` | Auto-filled with your communities | Form input. |
+| Propose | `Propose` (`#propose`) | Click button | Creates partnership proposal (`#part-msg`). |
+| Open Opportunities | Rows (`[data-o]`) | Click `View` | Navigates to opportunity detail. |
 
 ---
 
@@ -283,23 +326,29 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| Report Incident | Incident Title (`#emerg-title`) | Type `Main water line burst in Sector 3` | Input captured. |
-| Report Incident | Severity Select (`#emerg-sev`) | Select `critical` | Severity selected. |
-| Action | `Broadcast Emergency` | Click button | Sends POST `/api/ecosystem/emergencies`, triggers rapid responder algorithm. |
-| Responders List | `Offer Rapid Assistance` | Click button | Enrolls responder, dispatches notification to incident commander. |
+| Report Incident | Title (`#title`) | Type `Main water line burst in Sector 3` | Input captured. |
+| Report Incident | Community (`#cid`) | Auto-filled with first community | Input captured. |
+| Report Incident | Severity (`#sev`) | Select `critical` | Severity selected. |
+| Action | `Alert responders` (`#open`) | Click button | Sends POST `/api/ecosystem/emergencies`, renders ranked responders (matched skills, ETA, trust, score) in `#detail`. |
+| Incidents List | `I can help` (`[data-resp]`) | Click button | Responds to incident with 15-min ETA, refreshes list. |
+| Incidents List | `Resolve` (`[data-resolve]`) | Click button (creator) | Resolves incident, updates status. |
+
+> UI shows a `not a substitute for 112/911` badge — the demo must stay clearly advisory.
 
 ---
 
 ### Page 21: Developer APIs & Integrations (`#developers`)
 * **URL**: `http://localhost:8080/#developers`
-* **Purpose**: Manage API keys, webhooks, and third-party plugin integrations.
+* **Purpose**: Manage API keys, webhooks, plugins, and third-party integration stubs.
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| API Keys | Key Name (`#key-name`) | Type `Analytics Service Key` | Input captured. |
-| API Keys | `Generate New Key` | Click button | Generates key prefixed with `sm_demo_`, renders in key table. |
-| Webhook Setup | Webhook URL (`#webhook-url`) | Type `https://example.com/webhook` | Input captured. |
-| Webhook Setup | `Register Webhook` | Click button | Saves webhook subscription, shows delivery log stubs. |
+| API Keys | `Generate API key` (`#key`) | Click button | Generates key prefixed with `sm_demo_`, renders in `#key-out` + existing keys list. |
+| Webhook Setup | URL (`#wh-url`) | Type `https://example.com/webhook` | Input captured. |
+| Webhook Setup | `Create webhook` (`#wh-create`) | Click button | Saves webhook subscription with secret (`#wh-msg`). |
+| Webhook Setup | `Test deliver (stub)` (`#wh-test`) | Click button | Records stub deliveries locally, shows count in `#wh-out`. |
+| Integrations | `Connect stub` (`[data-p]`) | Click button | Connects integration stub (`connected_stub`), refreshes page. |
+| Plugin Marketplace | `Install` (`[data-install]`) | Click button | Installs plugin (e.g. `csv-export`), refreshes page. |
 
 ---
 
@@ -309,9 +358,15 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| AI Reasoning | Query Box (`#reason-query`) | Type `Form an emergency response team for power outage` | Query captured. |
-| AI Reasoning | `Execute AI Reasoning` | Click button | Calls POST `/api/intelligence/reason`, outputs multi-step explainable plan steps. |
-| SDG Tracking | `Log Impact Contribution` | Click button | Opens global SDG impact modal. |
+| AI Reasoning | Query (`#q`) | Type `Form an emergency response team for power outage` | Query captured. |
+| AI Reasoning | `Reason` (`#reason`) | Click button | Calls POST `/api/intelligence/reason`, outputs multi-step explainable plan steps in `#reason-out`. |
+| SDG Impact | Metric (`#metric`) + Value (`#value`) | Type `trees_planted`, `10` | Prepares impact record. |
+| SDG Impact | `Log Impact` (`#log-impact`) | Click button | Logs impact; updates `#resilience-score` and `#total-impact-records`. |
+| SDG Impact | `Full Impact Logger` (`#open-impact-modal`) | Click button | Opens the global SDG impact modal. |
+| Research | `Publish skill snapshot` (`#pub-ds`) | Click button (logged in) | Publishes open dataset snapshot. |
+| Passport | `Sync my portable passport` (`#passport`) | Click button (logged in) | Syncs passport credentials, shows result in `#pass-out`. |
+| Scenarios | `#scen-cid`, `#scen-members`, `#scen-skill` | Fill fields | Prepares what-if simulation. |
+| Scenarios | `Run scenario` (`#scen`) | Click button | Runs simulation, shows predicted health outcomes in `#scen-out`. |
 
 ---
 
@@ -321,26 +376,28 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
-| OS Pulse | `Trigger OS Pulse` | Click button | Calls POST `/api/autonomy/os/:communityId/pulse`, executes full agent autonomous cycle. |
-| Collective Memory | Memory Content Input | Type `Monsoon drainage procedures` | Form input. |
-| Collective Memory | `Add Memory Entry` | Click button | Saves memory note to collective store. |
-| Collective Memory | `AI Brainstorm / Synthesize` | Click button | Synthesizes memory items into AI recommendations. |
+| OS Pulse | `#pulse` (`Run OS pulse (all agents)`) | Click button | Calls POST `/api/autonomy/os/:communityId/pulse`, executes full agent cycle, renders twin + agent outputs in `#out`. |
+| OS Pulse | `#auto-teams` (`Auto-form teams`) | Click button | Auto-forms teams from open opportunities. |
+| OS Pulse | `#refresh-twin` (`Refresh digital twin`) | Click button | Refreshes digital twin snapshot. |
+| Collective Memory | Prompt (`#prompt`) | Type `How might we improve emergency readiness?` | Input captured. |
+| Collective Memory | `Brainstorm` (`#brain`) | Click button | Synthesizes memory items into AI recommendations in `#brain-out`. |
 
 ---
 
 ## 3. Global Modal Systems
 
 ### 🌱 Log SDG Impact Contribution Modal
-* **Trigger**: Click `+ Quick Action` → `Log Impact`, or click `Log Impact Contribution` on `#intelligence`.
+* **Trigger**: Click `+ Quick Action` → `#qa-log-impact`, or click `#open-impact-modal` on `#intelligence`.
 
 | Form Element | Input / Value | Action / Button | Expected Result |
 |---|---|---|---|
-| **SDG Category** | Select `SDG 13: Climate Action` | Dropdown select | Sets target SDG tag. |
-| **Metric Name** | Type `trees_planted` | Text input | Sets impact metric. |
-| **Contribution Value** | Type `10` | Number input | Sets numeric contribution. |
-| **Notes / Description** | Type `Greenwood Park Tree Plantation` | Text input | Sets tag description. |
-| **Submit Button** | Click `Log Impact` | Click button | Disables button, shows loading spinner, calls POST `/api/intelligence/impact`, closes modal, shows Toast notification `Impact logged successfully!`, and fires `impactRecorded` event to update metrics on active page. |
-| **Cancel Button** | Click `Cancel` or `✕` | Click button | Closes modal immediately without saving. |
+| **SDG Category** | `#modal-sdg-select` | Select `SDG 13 - Climate Action` | Sets target SDG tag. |
+| **Metric Name** | `#modal-metric` | Type `trees_planted` | Sets impact metric (default `people_helped`). |
+| **Contribution Value** | `#modal-val` | Type `10` | Sets numeric contribution (default `5`, min `1`). |
+| **Tags / Description** | `#modal-tags` | Type `Greenwood Park Tree Plantation` | Sets tag description. |
+| **Submit Button** | `#modal-submit-impact` | Click `Log Impact` | Disables button, shows loading spinner, calls POST `/api/intelligence/impact`, closes modal, shows toast `Impact logged successfully!`, and fires `impactRecorded` event to update metrics on the active page. |
+| **Error Surface** | `#impact-modal-msg` | (on failure) | Displays error banner without closing the modal. |
+| **Cancel Button** | `#modal-cancel-btn` or `#modal-close` (✕) | Click button | Closes modal immediately without saving. |
 
 ---
 
@@ -385,3 +442,15 @@ curl -s -X POST http://localhost:4000/api/autonomy/os/$CID/pulse \
   -H 'Content-Type: application/json' \
   -d '{"goal":"Strengthen community readiness"}'
 ```
+
+---
+
+## 5. Automated Backend Test Suite
+
+The 8 integration suites in `backend/src/tests/run_tests.js` cover the same ground at the API/service layer (run from the repo root):
+
+```bash
+node backend/src/tests/run_tests.js
+```
+
+Suites: DB hydration & seed, crypto auth & JWT, knowledge graph & community dissolution, NLP skill extraction, AI team builder, community analytics & health metrics, autonomous agents engine, and emergency response & SDG impact reporting. See `usage_guide.md` and `system_architecture.md` for context.

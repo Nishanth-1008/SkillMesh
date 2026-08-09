@@ -5,12 +5,12 @@
 const GraphView = {
   colorFor(type) {
     return {
-      person: '#4da3ff',
-      skill: '#4ce0ff',
-      community: '#b088ff',
-      organization: '#ffb454',
-      project: '#4ce0a0',
-    }[type] || '#9aa3b8';
+      person: '#C55221',       // Burnt Orange
+      skill: '#CC8800',        // Amber
+      community: '#9A3412',    // Ochre
+      organization: '#D97706', // Warm Amber
+      project: '#16A34A',      // Success Green
+    }[type] || '#5C6479';
   },
 
   render(container, data) {
@@ -115,13 +115,13 @@ const GraphView = {
         if (selectedNode.type === 'person') {
           popupHtml = `
             <div class="card" style="margin-top: 14px; padding: 14px 18px; background: rgba(76, 224, 255, 0.08); border-color: rgba(76, 224, 255, 0.3);">
-              <div style="display: flex; justify-content: space-between; align- items: center;">
-                <strong>⚡ Attached Skills for ${escapeXml(selectedNode.label)}:</strong>
-                <button class="btn btn-sm" id="close-graph-popup" style="padding: 2px 8px; font-size: 11px;">✕ Close</button>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong><i data-lucide="zap" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i> Attached Skills for ${escapeXml(selectedNode.label)}:</strong>
+                <button class="btn btn-sm" id="close-graph-popup" style="padding: 2px 8px; font-size: 11px;"><i data-lucide="x" style="width: 12px; height: 12px; vertical-align: middle;"></i> Close</button>
               </div>
               <div style="margin-top: 8px;">
                 ${connectedNodesList.length
-                  ? connectedNodesList.map((s) => `<span class="badge badge-skill">✦ ${escapeXml(s.label)}</span>`).join(' ')
+                  ? connectedNodesList.map((s) => `<span class="badge badge-skill"><i data-lucide="sparkles" style="width: 12px; height: 12px; vertical-align: middle;"></i> ${escapeXml(s.label)}</span>`).join(' ')
                   : '<span class="muted">No attached skill nodes found in graph.</span>'}
               </div>
             </div>`;
@@ -129,12 +129,12 @@ const GraphView = {
           popupHtml = `
             <div class="card" style="margin-top: 14px; padding: 14px 18px; background: rgba(176, 136, 255, 0.1); border-color: rgba(176, 136, 255, 0.35);">
               <div style="display: flex; justify-content: space-between; align-items: center;">
-                <strong>🌐 Members of ${escapeXml(selectedNode.label)}:</strong>
-                <button class="btn btn-sm" id="close-graph-popup" style="padding: 2px 8px; font-size: 11px;">✕ Close</button>
+                <strong><i data-lucide="globe" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i> Members of ${escapeXml(selectedNode.label)}:</strong>
+                <button class="btn btn-sm" id="close-graph-popup" style="padding: 2px 8px; font-size: 11px;"><i data-lucide="x" style="width: 12px; height: 12px; vertical-align: middle;"></i> Close</button>
               </div>
               <div style="margin-top: 8px;">
                 ${connectedNodesList.length
-                  ? connectedNodesList.map((p) => `<span class="badge" style="border-color:#b088ff;color:#ffffff;">👤 ${escapeXml(p.label)}</span>`).join(' ')
+                  ? connectedNodesList.map((p) => `<span class="badge" style="border-color:#b088ff;color:#ffffff;"><i data-lucide="user" style="width: 12px; height: 12px; vertical-align: middle;"></i> ${escapeXml(p.label)}</span>`).join(' ')
                   : '<span class="muted">No member nodes found in graph.</span>'}
               </div>
             </div>`;

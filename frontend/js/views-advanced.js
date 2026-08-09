@@ -52,7 +52,7 @@ Views.analytics = async function (root) {
           </div>
           <div class="card"><h3>Milestones</h3>
             ${(milestones.milestones || []).map((m) => `
-              <p><strong>${m.label}</strong> ${m.reached ? '✓' : `${m.progress}%`}
+              <p><strong>${m.label}</strong> ${m.reached ? '<i data-lucide="check" style="width: 14px; height: 14px; color: var(--green);"></i>' : `${m.progress}%`}
               <div class="trust-track"><div class="trust-fill" style="width:${m.progress}%"></div></div></p>
             `).join('') || '<p class="muted">None</p>'}
           </div>
@@ -69,7 +69,7 @@ Views.analytics = async function (root) {
           <h3>Forecast</h3>
           <p class="muted">Health outlook: <strong>${forecast.healthTrend.outlook}</strong> (now ${forecast.healthTrend.current})</p>
           <p class="muted">Volunteer demand: ${forecast.volunteerForecast.forecast} · ${forecast.volunteerForecast.openRoles} open roles</p>
-          ${(forecast.crisisRisk || []).map((r) => `<p class="muted">⚠ ${r.detail}</p>`).join('')}
+          ${(forecast.crisisRisk || []).map((r) => `<p class="muted"><i data-lucide="alert-triangle" style="width: 14px; height: 14px; color: var(--amber);"></i> ${r.detail}</p>`).join('')}
         </div>` : ''}
         <div class="card">
           <h3>Emerging leaders</h3>
@@ -640,8 +640,8 @@ Views.intelligence = async function (root) {
           <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
             <input class="input" id="metric" placeholder="Metric e.g. people_helped" style="flex:1; min-width:180px; margin-bottom:0;" />
             <input class="input" id="value" type="number" placeholder="Value" style="width:100px; margin-bottom:0;" value="1" min="1" />
-            <button class="btn btn-primary" id="log-impact">🌱 Log Impact</button>
-            <button class="btn" id="open-impact-modal">📋 Full Impact Logger</button>
+            <button class="btn btn-primary" id="log-impact"><i data-lucide="sprout" style="width: 14px; height: 14px; vertical-align: middle;"></i> Log Impact</button>
+            <button class="btn" id="open-impact-modal"><i data-lucide="clipboard" style="width: 14px; height: 14px; margin-right: 4px;"></i> Full Impact Logger</button>
           </div>
         ` : '<p class="muted" style="margin-top:10px;">Log in to contribute impact records.</p>'}
       </div>
@@ -732,7 +732,7 @@ Views.intelligence = async function (root) {
           App.showToast(`Failed to log impact: ${err.message || 'Error'}`);
         } finally {
           logBtn.disabled = false;
-          logBtn.innerHTML = `🌱 Log Impact`;
+          logBtn.innerHTML = `<i data-lucide="sprout" style="width: 14px; height: 14px; vertical-align: middle;"></i> Log Impact`;
         }
       };
     }
@@ -865,16 +865,16 @@ Views.home = function (root) {
   extra.innerHTML = `
     <div class="section-title">Phases 3–6 · demo intelligence</div>
     <div class="grid">
-      <div class="card"><div class="card-icon">📊</div><h3>Community Intelligence</h3>
+      <div class="card"><div class="card-icon"><i data-lucide="bar-chart-3"></i></div><h3>Community Intelligence</h3>
         <p class="muted">Health scores, skill gaps, predictions, events, and gamification.</p>
         <button class="btn" data-go="analytics">Open analytics</button></div>
-      <div class="card"><div class="card-icon">🌐</div><h3>Ecosystem</h3>
+      <div class="card"><div class="card-icon"><i data-lucide="globe"></i></div><h3>Ecosystem</h3>
         <p class="muted">Public hub, federation, emergency response, and developer APIs.</p>
         <button class="btn" data-go="hub">Public hub</button></div>
-      <div class="card"><div class="card-icon">🛂</div><h3>Global Intelligence</h3>
+      <div class="card"><div class="card-icon"><i data-lucide="shield-check"></i></div><h3>Global Intelligence</h3>
         <p class="muted">Reasoning engine, skill passports, SDG impact, scenario sims.</p>
         <button class="btn" data-go="intelligence">Explore</button></div>
-      <div class="card"><div class="card-icon">🤖</div><h3>Autonomy</h3>
+      <div class="card"><div class="card-icon"><i data-lucide="bot"></i></div><h3>Autonomy</h3>
         <p class="muted">AI agents, digital twin, collective memory, auto-forming teams.</p>
         <button class="btn" data-go="autonomy">Launch agents</button></div>
     </div>`;

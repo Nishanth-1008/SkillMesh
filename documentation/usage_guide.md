@@ -53,9 +53,10 @@ Empty DB auto-seeds on first `npm start`. Use `npm run db:reset` to migrate + re
 ```bash
 cd frontend
 python3 -m http.server 8080 # http://localhost:8080
+# Windows: python -m http.server 8080
 ```
 
-Optional: create `frontend/js/config.local.js` to override the API base without editing tracked files:
+The SPA is fully static (no build step). Optional: create `frontend/js/config.local.js` (gitignored, already referenced by `index.html`) to override the API base without editing tracked files:
 
 ```js
 window.SKILLMESH_CONFIG = { API_BASE: 'http://localhost:4000/api' };
@@ -63,7 +64,7 @@ window.SKILLMESH_CONFIG = { API_BASE: 'http://localhost:4000/api' };
 
 Demo accounts (password `password123`):
 
-`raj@example.com`, `sneha@example.com`, `arjun@example.com`, `priya@example.com`, `kabir@example.com`
+`raj@example.com` (community owner — admin access), `sneha@example.com`, `arjun@example.com`, `priya@example.com`, `kabir@example.com`
 
 ```bash
 curl http://localhost:4000/health
@@ -210,6 +211,6 @@ curl -s -X POST http://localhost:4000/api/autonomy/os/$CID/pulse \
 
 ## Architecture note
 
-Postgres persistence lives in `db.js` (hydrate + persist). Next swaps: `nlp/skillExtractor.js` → LLM, static frontend → Next.js. Route contracts are stable.
+Postgres persistence lives in `db.js` (hydrate + persist — a full-state sync, not query-per-request). Next swaps: `nlp/skillExtractor.js` → LLM, static frontend → Next.js. Route contracts are stable.
 
-See also: `roadmap.md`, `system_architecture.md`, `project_story.md`, `next_steps.md`, root `README.md`.
+See also: `roadmap.md`, `system_architecture.md`, `project_story.md`, `next_steps.md`, `feature_testing_guide.md`, root `README.md`.

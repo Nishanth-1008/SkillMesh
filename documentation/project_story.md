@@ -165,26 +165,28 @@ The project combines modern web technologies with AI reasoning.
 
 ### Frontend
 
-- Next.js
-- React
-- Tailwind CSS
-- Interactive graph visualization
+- Vanilla JavaScript single-page app (no framework — hash router, views, state store)
+- Modern CSS design system (design tokens, glassmorphism, light/dark themes)
+- Interactive concentric SVG knowledge graph visualizer
+- Real-time-feeling inbox, notifications, toasts, and modal systems
 
 ### Backend
 
-- Node.js
-- Express
+- Node.js with a custom zero-dependency Express-lite HTTP router
+- 18 modular API route modules across 6 phases
+- Native `crypto.scryptSync` password hashing + HMAC-SHA256 JWT auth
 
 ### Database
 
-- PostgreSQL / Supabase
+- PostgreSQL via Neon (44-table relational schema, JSONB for flexible payloads)
+- Atomic local JSON fallback (`data/db.json`) when `DATABASE_URL` is unset
 
 ### AI
 
-- Large Language Models for natural language understanding
-- Knowledge graph reasoning
-- Semantic search
-- Intelligent ranking
+- Heuristic NLP engine (`nlp/skillExtractor.js`): intent detection, skill token extraction, urgency & location signals
+- Knowledge graph reasoning over typed relationships
+- Trust-blended candidate scoring (skill match, trust, availability, collaboration history)
+- Designed so the NLP layer can be swapped for an LLM (Gemini/OpenAI) without changing API contracts
 
 The recommendation engine evaluates multiple signals simultaneously, including skills, trust, availability, proximity, and collaboration history to produce context-aware recommendations instead of simple keyword matches.
 
@@ -221,21 +223,35 @@ Most importantly, we learned that technology has the greatest impact when it hel
 
 ---
 
+# Current State
+
+What started as a vision is now an end-to-end demo of all six phases:
+
+- Natural-language search, AI team builder, projects, trust & endorsements, opportunities
+- Community analytics, skill-gap detection, events with check-ins and impact reports, gamification, admin moderation
+- Public hub, community federation, emergency response with ranked responders, developer platform (API keys, webhooks, plugins)
+- Global network, multi-step explainable reasoning, skill passport, SDG impact tracking, scenario simulation
+- Six autonomous agents, live community digital twins, collective memory, and a one-shot "OS pulse"
+
 # Future Roadmap
 
-Our vision extends far beyond a hackathon prototype.
+Our vision extends far beyond the demo build.
 
-Future plans include:
+Already shipped (demo-grade) and ready to deepen:
 
-- Community trust verification
-- Offline-first support for rural areas
-- Multilingual AI
-- NGO integrations
-- Government partnerships
-- Predictive skill-gap analysis
-- Community analytics dashboards
-- Open APIs
-- Cross-community collaboration
+- Community trust verification and endorsements with evidence
+- Community analytics dashboards and predictive skill-gap analysis
+- Open APIs, webhooks, and a plugin marketplace
+- Cross-community collaboration and emergency response
+- Skill passports and SDG impact tracking
+
+Next on the horizon:
+
+- Production hardening: query-per-request SQL, real auth (OAuth/password reset), CI tests, env-based secrets
+- Real LLM-powered understanding and semantic search (pgvector embeddings)
+- Offline-first support for rural areas and multilingual AI (Hindi + English first)
+- NGO integrations and government partnerships
+- Realtime collaboration, mobile-first Next.js UI, and verified org badges
 
 Ultimately, we envision SkillMesh becoming the intelligence layer for communities worldwide.
 

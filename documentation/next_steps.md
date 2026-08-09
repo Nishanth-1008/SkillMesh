@@ -2,7 +2,7 @@
 
 How to go from today’s **strong offline demo** to a product people obsess over — while staying honest about what’s real vs aspirational.
 
-Related: [`usage_guide.md`](./usage_guide.md) · [`system_architecture.md`](./system_architecture.md) · [`roadmap.md`](./roadmap.md)
+Related: [`usage_guide.md`](./usage_guide.md) · [`system_architecture.md`](./system_architecture.md) · [`roadmap.md`](./roadmap.md) · [`feature_testing_guide.md`](./feature_testing_guide.md) · [`qa_edge_case_testing_guide.md`](./qa_edge_case_testing_guide.md)
 
 ---
 
@@ -13,9 +13,10 @@ SkillMesh already has end-to-end demo coverage for Phases 1–6:
 - Natural-language search, team builder, projects, trust, opportunities (apply **and** decide)
 - Profile editing, leave community, graph edge sync
 - Analytics, events (register / check-in / impact), admin, gamification
-- Public hub + federation UI, emergency open/respond/resolve
+- Public hub + federation UI (propose/accept partnerships), emergency open/respond/resolve
 - Reasoning, passport, SDG impact, research datasets, scenarios
-- Agents, digital twin, OS pulse
+- Agents, digital twin, OS pulse, collective memory + brainstorm
+- Notification inbox (bell, mark-all-read with undo), activity feed, global search dropdown, quick actions
 
 **Still demo-grade (by design):** hydrate/persist over SQL (not query-per-request), heuristic NLP, stubbed Calendar/Maps/email/webhooks egress, rule-based “agents.”
 
