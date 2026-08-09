@@ -88,25 +88,81 @@ Views.register = function (root) {
       <h3>Create your profile</h3>
       <div id="msg"></div>
       <label>Name</label>
-      <input class="input" id="name" placeholder="Your name" />
+      <input class="input" id="name" placeholder="Your name" autocomplete="name" />
       <label>Email</label>
-      <input class="input" id="email" type="email" placeholder="you@example.com" />
+      <input class="input" id="email" type="email" placeholder="you@example.com" autocomplete="email" />
       <label>Password</label>
-      <input class="input" id="password" type="password" placeholder="At least 6 characters" />
+      <input class="input" id="password" type="password" placeholder="8+ characters with a number &amp; symbol" autocomplete="new-password" />
+      <div class="pwd-rules" id="pwd-rules" hidden>
+        <div class="pwd-rule" data-rule="length"><span class="pwd-rule-icon">○</span> At least 8 characters</div>
+        <div class="pwd-rule" data-rule="upper"><span class="pwd-rule-icon">○</span> One uppercase letter</div>
+        <div class="pwd-rule" data-rule="lower"><span class="pwd-rule-icon">○</span> One lowercase letter</div>
+        <div class="pwd-rule" data-rule="number"><span class="pwd-rule-icon">○</span> One number</div>
+        <div class="pwd-rule" data-rule="special"><span class="pwd-rule-icon">○</span> One special character (e.g. ! @ # $)</div>
+      </div>
+      <div class="pwd-meter" id="pwd-meter" hidden><div class="pwd-meter-fill" id="pwd-meter-fill"></div></div>
+      <p class="pwd-meter-label" id="pwd-meter-label" hidden></p>
       <label>Location (optional)</label>
-      <input class="input" id="location" placeholder="e.g. Greenwood Sector 4" />
-      <button class="btn btn-primary" id="submit" style="width:100%;">Register</button>
+      <input class="input" id="location" placeholder="e.g. Greenwood Sector 4" autocomplete="address-level2" />
+      <button class="btn btn-primary" id="submit" style="width:100%;" disabled>Register</button>
       <p class="muted" style="margin-top:14px;">Already have an account? <a href="#" id="go-login" style="color:var(--cyan);">Log in</a></p>
     </div>
   `;
   root.querySelector('#go-login').onclick = (e) => { e.preventDefault(); App.navigate('login'); };
+
+  const pwd = root.querySelector('#password');
+  const rulesEl = root.querySelector('#pwd-rules');
+  const meterEl = root.querySelector('#pwd-meter');
+  const meterFill = root.querySelector('#pwd-meter-fill');
+  const meterLabel = root.querySelector('#pwd-meter-label');
+  const btn = root.querySelector('#submit');
+  const checks = [
+    { rule: 'length', test: (v) => v.length >= 8 },
+    { rule: 'upper', test: (v) => /[A-Z]/.test(v) },
+    { rule: 'lower', test: (v) => /[a-z]/.test(v) },
+    { rule: 'number', test: (v) => /[0-9]/.test(v) },
+    { rule: 'special', test: (v) => /[^A-Za-z0-9]/.test(v) },
+  ];
+  const strength = (met) => (met <= 1 ? 0 : met <= 3 ? 1 : met === 4 ? 2 : 3);
+  const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong'];
+  const validate = () => {
+    const v = pwd.value;
+    const met = {};
+    checks.forEach((c) => { met[c.rule] = c.test(v); });
+    checks.forEach((c) => {
+      const row = rulesEl.querySelector(`[data-rule="${c.rule}"]`);
+      row.classList.toggle('ok', met[c.rule]);
+      row.querySelector('.pwd-rule-icon').textContent = met[c.rule] ? '✓' : '○';
+    });
+    const total = checks.filter((c) => met[c.rule]).length;
+    const lv = strength(total);
+    meterFill.className = `pwd-meter-fill lv${lv}`;
+    meterFill.style.width = `${25 + lv * 25}%`;
+    meterLabel.textContent = `Strength: ${strengthLabels[lv]}`;
+    btn.disabled = total !== checks.length;
+    return total === checks.length;
+  };
+  pwd.onfocus = () => {
+    rulesEl.hidden = false;
+    meterEl.hidden = false;
+    meterLabel.hidden = false;
+    validate();
+  };
+  pwd.oninput = validate;
+  pwd.onblur = () => {
+    if (!pwd.value) {
+      rulesEl.hidden = true;
+      meterEl.hidden = true;
+      meterLabel.hidden = true;
+    }
+  };
+
   root.querySelector('#submit').onclick = async () => {
     const name = root.querySelector('#name').value.trim();
     const email = root.querySelector('#email').value.trim();
     const password = root.querySelector('#password').value;
     const location = root.querySelector('#location').value.trim();
     const msg = root.querySelector('#msg');
-    const btn = root.querySelector('#submit');
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner"></span> Creating account…`;
     try {
@@ -117,8 +173,8 @@ Views.register = function (root) {
       App.navigate('dashboard');
     } catch (e) {
       msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
-      btn.disabled = false;
       btn.innerHTML = `Register`;
+      btn.disabled = !validate();
     }
   };
 };
@@ -560,10 +616,8 @@ Views.search = function (root, params) {
     </div>
     <div id="results"></div>
   `;
-  root.querySelector('#run').onclick = async () => {
-    const query = root.querySelector('#query').value.trim();
+  const runSearch = async (query) => {
     const results = root.querySelector('#results');
-    if (!query) return;
     results.innerHTML = `<div class="loading-line"><span class="spinner"></span> Reasoning over the community graph…</div>`;
     try {
       const data = await Api.search({ query, communityId: params && params.communityId });
@@ -572,6 +626,16 @@ Views.search = function (root, params) {
       results.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
     }
   };
+  root.querySelector('#run').onclick = () => {
+    const query = root.querySelector('#query').value.trim();
+    if (!query) return;
+    runSearch(query);
+  };
+  const prefilled = params && params.q ? String(params.q) : '';
+  if (prefilled) {
+    root.querySelector('#query').value = prefilled;
+    if (Store.isLoggedIn()) runSearch(prefilled);
+  }
 };
 
 function renderSearchResults(container, data) {

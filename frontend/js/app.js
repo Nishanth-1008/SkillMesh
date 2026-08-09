@@ -257,6 +257,16 @@ const App = {
           searchResults.classList.add('hidden');
         }
       });
+
+      // Enter jumps straight into full AI Search with the typed query
+      searchInput.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const query = searchInput.value.trim();
+        searchResults.classList.add('hidden');
+        if (!query) return;
+        this.navigate('search', { q: query });
+      };
     }
 
     // 3. Quick Actions Dropdown

@@ -859,6 +859,59 @@ code, pre, .mono, .label-caps, .breadcrumb-container, .time-group-header, .searc
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-light);
 }
+
+/* Password strength hints (live validation) */
+.pwd-rules {
+  margin: -6px 0 10px;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: 4px;
+}
+.pwd-rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  transition: color 0.15s ease;
+}
+.pwd-rule .pwd-rule-icon {
+  width: 16px;
+  text-align: center;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+.pwd-rule.ok { color: var(--green); }
+.pwd-rule.ok .pwd-rule-icon { color: var(--green); }
+.pwd-meter {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--panel-border);
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+.pwd-meter-fill {
+  height: 100%;
+  width: 0;
+  border-radius: var(--radius-pill);
+  transition: width 0.2s ease, background 0.2s ease;
+}
+.pwd-meter-fill.lv0 { background: var(--red); }
+.pwd-meter-fill.lv1 { background: var(--amber); }
+.pwd-meter-fill.lv2 { background: var(--secondary); }
+.pwd-meter-fill.lv3 { background: var(--green); }
+.pwd-meter-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 label {
   font-family: var(--font-mono);
   font-size: 0.75rem;

@@ -59,6 +59,28 @@
       "bio": "",
       "interests": [],
       "createdAt": "2026-08-04T08:58:28.358Z"
+    },
+    {
+      "id": "44af4c58-2928-4782-9a6f-abc514984ff2",
+      "name": "Nishanth",
+      "email": "nishanth.palugula@gmail.com",
+      "passwordHash": "aec3b5b7a40067275f9706986620567eb7ab2652d0cce273fe7562391a6fd73bc88a3511b75d0722830ba6329ca9c2525fd61e70ae155b377765e71390931fcd",
+      "salt": "e94da648067a0c7210eb495137e7189f",
+      "location": "Hyderabad",
+      "availability": "available",
+      "createdAt": "2026-08-09T17:28:46.572Z"
+    },
+    {
+      "id": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "name": "Alex Rivers",
+      "email": "alex.qa.test@example.com",
+      "passwordHash": "6a182b9a828076cb6a641081936a2b81bb0e3b70ac62a352136b55123bdbccceafdf707033d58deb52b3d8f4532c2cc6a74aead9229b5e9eadf47c3d7d4b7b77",
+      "salt": "4d0d118124d9f9fce915d8bb652e622e",
+      "location": "Sector 7 Community",
+      "availability": "available",
+      "createdAt": "2026-08-09T17:49:44.817Z",
+      "bio": "",
+      "interests": []
     }
   ],
   "communities": [
@@ -140,6 +162,13 @@
       "userId": "0ffce06d-df72-43d0-80cd-230bb49de639",
       "role": "owner",
       "joinedAt": "2026-08-04T09:20:00.655Z"
+    },
+    {
+      "id": "a8e0e925-42e3-4372-8a40-52be8279292c",
+      "communityId": "6a0ef5df-48ca-4bd1-a4df-ed903876417b",
+      "userId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "role": "member",
+      "joinedAt": "2026-08-09T17:52:27.738Z"
     }
   ],
   "skills": [
@@ -292,6 +321,13 @@
       "id": "f48b5125-9804-4a5e-9af8-33a87055ea53",
       "userId": "9d7bfb17-bfdc-4c1b-bc9e-dc53a25df86d",
       "skillId": "b69f2b91-27cd-46f0-89bd-e5b32b9039e3",
+      "level": "expert",
+      "source": "stated"
+    },
+    {
+      "id": "44fc5cbc-92be-4d8f-90cf-7bb8cc6e945b",
+      "userId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "skillId": "13a2095e-49bf-4e7a-953c-a52f0a3575a7",
       "level": "expert",
       "source": "stated"
     }
@@ -616,6 +652,36 @@
       "kind": "owns",
       "weight": 1,
       "createdAt": "2026-08-04T09:24:34.639Z"
+    },
+    {
+      "id": "4b129680-1d19-4801-9383-e626e1abe67d",
+      "fromType": "person",
+      "fromId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "toType": "skill",
+      "toId": "13a2095e-49bf-4e7a-953c-a52f0a3575a7",
+      "kind": "has_skill",
+      "weight": 1,
+      "createdAt": "2026-08-09T17:50:29.010Z"
+    },
+    {
+      "id": "1439bbcb-ce4b-47f9-836e-472ba1993a8c",
+      "fromType": "person",
+      "fromId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "toType": "community",
+      "toId": "6a0ef5df-48ca-4bd1-a4df-ed903876417b",
+      "kind": "member_of",
+      "weight": 1,
+      "createdAt": "2026-08-09T17:52:27.738Z"
+    },
+    {
+      "id": "3e1f0db6-de40-47fb-bee2-a2f3917287f9",
+      "fromType": "person",
+      "fromId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "toType": "project",
+      "toId": "70f0fb83-e129-4652-8317-a18d8a4b90df",
+      "kind": "owns",
+      "weight": 1,
+      "createdAt": "2026-08-09T17:53:18.210Z"
     }
   ],
   "projects": [
@@ -652,6 +718,18 @@
       "status": "active",
       "timeline": null,
       "createdAt": "2026-08-04T09:24:34.639Z",
+      "aiBuilt": true
+    },
+    {
+      "id": "70f0fb83-e129-4652-8317-a18d8a4b90df",
+      "title": "Build a coding app and teach kids programming and robotics",
+      "description": "Build a coding app and teach kids programming and robotics",
+      "goal": "Build a coding app and teach kids programming and robotics",
+      "communityId": null,
+      "ownerId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "status": "active",
+      "timeline": null,
+      "createdAt": "2026-08-09T17:53:18.210Z",
       "aiBuilt": true
     }
   ],
@@ -716,6 +794,22 @@
       "id": "9720d062-8835-43b0-9186-0945e8f2eeea",
       "projectId": "8a653b75-374a-4c75-8b21-3891b1c1f05b",
       "userId": "2928c4b1-5e2f-425a-b42d-ada99862965b",
+      "role": "member",
+      "status": "invited",
+      "joinedAt": null
+    },
+    {
+      "id": "1112b240-dbc9-4662-9dab-8a8367dd69de",
+      "projectId": "70f0fb83-e129-4652-8317-a18d8a4b90df",
+      "userId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "role": "owner",
+      "status": "joined",
+      "joinedAt": "2026-08-09T17:53:18.210Z"
+    },
+    {
+      "id": "5940f0cf-3233-44b9-acdb-39bb9b03a668",
+      "projectId": "70f0fb83-e129-4652-8317-a18d8a4b90df",
+      "userId": "0ffce06d-df72-43d0-80cd-230bb49de639",
       "role": "member",
       "status": "invited",
       "joinedAt": null
@@ -835,6 +929,16 @@
       "points": 4,
       "summary": "AI-built team for \"Build civic emergency alerting app. Need programming, first aid, and electrical \"",
       "createdAt": "2026-08-04T09:24:34.639Z"
+    },
+    {
+      "id": "c5bfd33e-4238-47ff-a7f8-bfa881446c28",
+      "userId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "kind": "ai_team",
+      "refType": "project",
+      "refId": "70f0fb83-e129-4652-8317-a18d8a4b90df",
+      "points": 4,
+      "summary": "AI-built team for \"Build a coding app and teach kids programming and robotics\"",
+      "createdAt": "2026-08-09T17:53:18.210Z"
     }
   ],
   "badges": [
@@ -885,6 +989,12 @@
       "userId": "0ffce06d-df72-43d0-80cd-230bb49de639",
       "badge": "community_pillar",
       "awardedAt": "2026-08-04T09:24:34.639Z"
+    },
+    {
+      "id": "3722c62d-e3e3-46fb-b782-5721e4b73049",
+      "userId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "badge": "project_starter",
+      "awardedAt": "2026-08-09T17:53:18.211Z"
     }
   ],
   "opportunities": [
@@ -1091,6 +1201,26 @@
       "link": "#events",
       "read": false,
       "createdAt": "2026-08-04T09:32:44.203Z"
+    },
+    {
+      "id": "ef3219ee-110e-407d-a8dc-3211d1cb1ef8",
+      "userId": "0ffce06d-df72-43d0-80cd-230bb49de639",
+      "type": "invite",
+      "title": "AI team invite: Build a coding app and teach kids programming and robotics",
+      "body": "SkillMesh suggested you for this team based on skills and compatibility.",
+      "link": "#project?id=70f0fb83-e129-4652-8317-a18d8a4b90df",
+      "read": false,
+      "createdAt": "2026-08-09T17:53:18.210Z"
+    },
+    {
+      "id": "f40af231-9d3b-4266-a3e9-489484b54b4b",
+      "userId": "5577d234-c0b4-4e19-afa5-be6f56514097",
+      "type": "event",
+      "title": "Alex Rivers registered for Greenwood First-Aid Workshop",
+      "body": "",
+      "link": "#events",
+      "read": false,
+      "createdAt": "2026-08-09T17:53:58.624Z"
     }
   ],
   "activity": [
@@ -1277,6 +1407,30 @@
       "type": "agent_run",
       "summary": "emergency_response agent: Monitoring 4 active incidents.",
       "createdAt": "2026-08-04T09:32:44.205Z"
+    },
+    {
+      "id": "1938fee7-dba1-4776-a086-68bf8f5506ea",
+      "communityId": null,
+      "actorId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "type": "ai_team",
+      "summary": "Alex Rivers AI-built a team for \"Build a coding app and teach kids programming and robotics\"",
+      "createdAt": "2026-08-09T17:53:18.212Z"
+    },
+    {
+      "id": "476ac01b-fd7c-4d4b-918f-96f09a4e1d14",
+      "communityId": "6a0ef5df-48ca-4bd1-a4df-ed903876417b6a0ef5df-48ca-4bd1-a4df-ed903876417b",
+      "actorId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "type": "emergency",
+      "summary": "Emergency opened: \"Sector 7 power outage\" (high)",
+      "createdAt": "2026-08-09T17:55:10.386Z"
+    },
+    {
+      "id": "21725f47-7b67-4e07-ae57-02ff6ef43b19",
+      "communityId": "6a0ef5df-48ca-4bd1-a4df-ed903876417b",
+      "actorId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "type": "agent_run",
+      "summary": "community_manager agent: Community Manager reviewed health (65/100) and proposed 3 actions.",
+      "createdAt": "2026-08-09T17:57:09.583Z"
     }
   ],
   "organizations": [
@@ -1331,6 +1485,13 @@
       "id": "a48de958-63bb-49e4-8823-452c883172b0",
       "eventId": "0b73a375-f346-4892-b282-5969feb656a4",
       "userId": "1912a5e1-8c93-4e0e-b875-59394028da05",
+      "status": "registered",
+      "checkedInAt": null
+    },
+    {
+      "id": "7bf919ec-35c0-494c-ab2a-8eb0cc4d328d",
+      "eventId": "0b73a375-f346-4892-b282-5969feb656a4",
+      "userId": "e95362d3-973c-4f26-812e-d299cd186e0a",
       "status": "registered",
       "checkedInAt": null
     }
@@ -1431,6 +1592,14 @@
       "label": "Verified Passport",
       "points": 35,
       "awardedAt": "2026-08-04T08:58:28.448Z"
+    },
+    {
+      "id": "10ec9320-be4d-45fd-a0a4-0f68944572b7",
+      "userId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "achievement": "first_skill",
+      "label": "First Skill",
+      "points": 10,
+      "awardedAt": "2026-08-09T17:57:24.211Z"
     }
   ],
   "rewardPoints": [
@@ -1546,6 +1715,24 @@
           "delta": 10,
           "reason": "Achievement: First Skill",
           "at": "2026-08-04T08:58:28.447Z"
+        }
+      ]
+    },
+    {
+      "id": "d2e0397a-8b53-40df-b4d5-5216cdb81226",
+      "userId": "44af4c58-2928-4782-9a6f-abc514984ff2",
+      "balance": 0,
+      "history": []
+    },
+    {
+      "id": "952369a4-5c39-4518-9063-c774864dac20",
+      "userId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "balance": 10,
+      "history": [
+        {
+          "delta": 10,
+          "reason": "Achievement: First Skill",
+          "at": "2026-08-09T17:57:24.211Z"
         }
       ]
     }
@@ -1755,6 +1942,20 @@
       "location": null,
       "creatorId": "0ffce06d-df72-43d0-80cd-230bb49de639",
       "createdAt": "2026-08-04T09:30:26.895Z",
+      "resolvedAt": null
+    },
+    {
+      "id": "79b3641f-b039-4f90-aa13-0e4c465c7c7e",
+      "communityId": "6a0ef5df-48ca-4bd1-a4df-ed903876417b6a0ef5df-48ca-4bd1-a4df-ed903876417b",
+      "title": "Sector 7 power outage",
+      "severity": "high",
+      "skillsNeeded": [
+        "electrical"
+      ],
+      "status": "active",
+      "location": null,
+      "creatorId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+      "createdAt": "2026-08-09T17:55:10.385Z",
       "resolvedAt": null
     }
   ],
@@ -2073,7 +2274,7 @@
       "type": "community_manager",
       "communityId": "6a0ef5df-48ca-4bd1-a4df-ed903876417b",
       "status": "idle",
-      "lastRunAt": "2026-08-04T09:32:44.165Z",
+      "lastRunAt": "2026-08-09T17:57:09.583Z",
       "config": {
         "auto": true
       },
@@ -2085,6 +2286,10 @@
         {
           "note": "Community Manager reviewed health (62/100) and proposed 3 actions.",
           "at": "2026-08-04T09:32:44.165Z"
+        },
+        {
+          "note": "Community Manager reviewed health (65/100) and proposed 3 actions.",
+          "at": "2026-08-09T17:57:09.583Z"
         }
       ]
     },
@@ -2919,6 +3124,40 @@
       },
       "status": "completed",
       "createdAt": "2026-08-04T09:32:44.205Z"
+    },
+    {
+      "id": "202311d2-e249-482d-88df-83ea1f56ce2f",
+      "agentId": "56e3aba3-861f-4c6a-a5da-c5c8caf54718",
+      "input": {
+        "ownerId": "e95362d3-973c-4f26-812e-d299cd186e0a",
+        "creatorId": "e95362d3-973c-4f26-812e-d299cd186e0a"
+      },
+      "output": {
+        "healthIndex": 65,
+        "actions": [
+          {
+            "type": "recruit_or_train",
+            "skill": "first aid",
+            "severity": "moderate",
+            "suggestion": "Increase first aid capacity (demand 2 > supply 1)"
+          },
+          {
+            "type": "recruit_or_train",
+            "skill": "teaching",
+            "severity": "moderate",
+            "suggestion": "Increase teaching capacity (demand 2 > supply 1)"
+          },
+          {
+            "type": "recruit_or_train",
+            "skill": "event management",
+            "severity": "moderate",
+            "suggestion": "Increase event management capacity (demand 2 > supply 1)"
+          }
+        ],
+        "summary": "Community Manager reviewed health (65/100) and proposed 3 actions."
+      },
+      "status": "completed",
+      "createdAt": "2026-08-09T17:57:09.583Z"
     }
   ],
   "digitalTwins": [
@@ -2926,20 +3165,20 @@
       "id": "ea486472-2ac2-4b5c-ae3f-fe67139ef911",
       "communityId": "6a0ef5df-48ca-4bd1-a4df-ed903876417b",
       "snapshot": {
-        "timestamp": "2026-08-04T09:33:02.584Z",
+        "timestamp": "2026-08-09T17:56:46.063Z",
         "community": {
           "id": "6a0ef5df-48ca-4bd1-a4df-ed903876417b",
           "name": "Greenwood Residents Community",
           "description": "A demo neighborhood community used to showcase SkillMesh Phase 1 & 2."
         },
         "health": {
-          "healthIndex": 66,
-          "engagementScore": 66,
-          "collaborationScore": 37,
+          "healthIndex": 65,
+          "engagementScore": 67,
+          "collaborationScore": 34,
           "diversityScore": 100,
           "metrics": {
-            "members": 5,
-            "available": 4,
+            "members": 6,
+            "available": 5,
             "activeProjects": 1,
             "totalProjects": 1,
             "collaborationEdges": 4,
@@ -3025,6 +3264,15 @@
             "skills": [
               "plumbing",
               "electrical"
+            ]
+          },
+          {
+            "id": "e95362d3-973c-4f26-812e-d299cd186e0a",
+            "name": "Alex Rivers",
+            "location": "Sector 7 Community",
+            "availability": "available",
+            "skills": [
+              "robotics"
             ]
           }
         ],
@@ -3122,14 +3370,14 @@
         "resources": {
           "skillSlots": [
             {
-              "skill": "electrical",
+              "skill": "robotics",
               "count": 2,
               "experts": 2
             },
             {
-              "skill": "robotics",
-              "count": 1,
-              "experts": 1
+              "skill": "electrical",
+              "count": 2,
+              "experts": 2
             },
             {
               "skill": "programming",
@@ -3211,13 +3459,6 @@
               "demand": 2,
               "severity": "moderate",
               "recommendation": "Increase event management capacity (demand 2 > supply 1)"
-            },
-            {
-              "skill": "robotics",
-              "supply": 1,
-              "demand": 2,
-              "severity": "moderate",
-              "recommendation": "Increase robotics capacity (demand 2 > supply 1)"
             }
           ],
           "highDemand": [
@@ -3234,7 +3475,7 @@
             {
               "skill": "robotics",
               "demandScore": 2,
-              "supply": 1
+              "supply": 2
             },
             {
               "skill": "teaching",
@@ -3278,6 +3519,17 @@
                 "electrical"
               ],
               "contributions": 0,
+              "suggestion": "Invite to mentor or lead a project"
+            },
+            {
+              "user": {
+                "id": "e95362d3-973c-4f26-812e-d299cd186e0a",
+                "name": "Alex Rivers"
+              },
+              "expertSkills": [
+                "robotics"
+              ],
+              "contributions": 1,
               "suggestion": "Invite to mentor or lead a project"
             }
           ],
@@ -3338,6 +3590,17 @@
             },
             {
               "user": {
+                "id": "e95362d3-973c-4f26-812e-d299cd186e0a",
+                "name": "Alex Rivers"
+              },
+              "trustScore": 18,
+              "leadershipScore": 18,
+              "skills": [
+                "robotics"
+              ]
+            },
+            {
+              "user": {
                 "id": "9d7bfb17-bfdc-4c1b-bc9e-dc53a25df86d",
                 "name": "Kabir Shah"
               },
@@ -3346,18 +3609,6 @@
               "skills": [
                 "plumbing",
                 "electrical"
-              ]
-            },
-            {
-              "user": {
-                "id": "2928c4b1-5e2f-425a-b42d-ada99862965b",
-                "name": "Arjun Verma"
-              },
-              "trustScore": 2,
-              "leadershipScore": 2,
-              "skills": [
-                "electrical",
-                "carpentry"
               ]
             }
           ],
@@ -3393,7 +3644,7 @@
           ]
         }
       },
-      "updatedAt": "2026-08-04T09:33:02.584Z"
+      "updatedAt": "2026-08-09T17:56:46.063Z"
     }
   ],
   "communityMemory": [
@@ -3462,6 +3713,17 @@
         "autonomous"
       ],
       "createdAt": "2026-08-04T09:32:44.205Z"
+    },
+    {
+      "id": "eaa8e745-19bc-49fc-8608-58e445324049",
+      "communityId": "6a0ef5df-48ca-4bd1-a4df-ed903876417b",
+      "kind": "summary",
+      "content": "Health index 65. Top action: Increase first aid capacity (demand 2 > supply 1).",
+      "tags": [
+        "auto",
+        "manager"
+      ],
+      "createdAt": "2026-08-09T17:57:09.583Z"
     }
   ],
   "autonomousTasks": [
