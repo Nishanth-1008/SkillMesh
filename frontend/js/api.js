@@ -8,9 +8,13 @@ const API_BASE =
 const Api = {
   async _request(method, path, { body, auth = false } = {}) {
     const headers = { 'Content-Type': 'application/json' };
+    let hadToken = false;
     if (auth) {
       const token = Store.getToken();
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (token) {
+        hadToken = true;
+        headers['Authorization'] = `Bearer ${token}`;
+      }
     }
     const res = await fetch(`${API_BASE}${path}`, {
       method,
@@ -20,6 +24,25 @@ const Api = {
     let data = null;
     try { data = await res.json(); } catch { /* no body */ }
     if (!res.ok) {
+      // Session expiry / revoked token: purge credentials, sync other tabs,
+      // and drop the user back to the login screen with a notice.
+      if (res.status === 401 && auth && hadToken) {
+        Store.clearToken();
+        Store.setUser(null);
+        try { window.localStorage.removeItem('skillmesh_token'); } catch { /* private mode */ }
+        window.dispatchEvent(new Event('skillmesh:session-expired'));
+        if (window.location.hash.startsWith('#login')) {
+          const err = new Error((data && data.error) || 'Session expired. Please log in again.');
+          err.status = 401;
+          throw err;
+        }
+        window.location.hash = '#login';
+        try {
+          if (window.App && typeof App.showToast === 'function') {
+            App.showToast('Your session has expired. Please log in again.');
+          }
+        } catch { /* toast is optional */ }
+      }
       const err = new Error((data && data.error) || `Request failed (${res.status})`);
       err.status = res.status;
       throw err;

@@ -52,12 +52,28 @@ if (!DATABASE_URL && !(process.env.PGHOST && process.env.PGUSER && process.env.P
   );
 }
 
+/**
+ * Allowed browser origins for CORS. Comma-separated `ALLOWED_ORIGINS`
+ * (e.g. "https://skillmesh.app,https://staging.skillmesh.app") or the legacy
+ * single-value `CORS_ORIGIN`. `*` allows every origin (local dev only).
+ */
+function parseOrigins() {
+  const raw = process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN || '*';
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+const allowedOrigins = parseOrigins();
+
 const config = {
   NODE_ENV,
   isProd,
   PORT: int(process.env.PORT, 4000),
   HOST: process.env.HOST || '0.0.0.0',
   CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
+  ALLOWED_ORIGINS: allowedOrigins,
   JWT_SECRET,
   JWT_TTL_SECONDS: int(process.env.JWT_TTL_SECONDS, 60 * 60 * 24 * 7),
   DATABASE_URL,
@@ -69,6 +85,12 @@ const config = {
   PGUSER: process.env.PGUSER,
   PGPASSWORD: process.env.PGPASSWORD,
   SKILLMESH_API_BASE: process.env.SKILLMESH_API_BASE || `http://localhost:${int(process.env.PORT, 4000)}/api`,
+  // 100 requests / minute / IP — see utils/router.js rate limiter.
+  RATE_LIMIT_PER_MINUTE: int(process.env.RATE_LIMIT_PER_MINUTE, 100),
+  // Frontend static assets (served with long-lived cache headers in production).
+  STATIC_DIR: process.env.STATIC_DIR || path.join(__dirname, '..', '..', 'frontend'),
+  // Daily database snapshot backups.
+  BACKUP_DIR: process.env.BACKUP_DIR || path.join(__dirname, '..', 'data', 'backups'),
 };
 
 function pgPoolConfig() {

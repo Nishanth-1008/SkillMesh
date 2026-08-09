@@ -63,6 +63,11 @@ Views.login = function (root) {
     const email = root.querySelector('#email').value.trim();
     const password = root.querySelector('#password').value;
     const msg = root.querySelector('#msg');
+    const btn = root.querySelector('#submit');
+    // Double-submit lock: disable immediately so rapid clicks can't fire
+    // duplicate login requests.
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> Logging in…`;
     try {
       const { token, user } = await Api.login({ email, password });
       Store.setToken(token);
@@ -70,7 +75,9 @@ Views.login = function (root) {
       App.refreshNav();
       App.navigate('dashboard');
     } catch (e) {
-      msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+      msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
+      btn.disabled = false;
+      btn.innerHTML = `Log in`;
     }
   };
 };
@@ -99,6 +106,9 @@ Views.register = function (root) {
     const password = root.querySelector('#password').value;
     const location = root.querySelector('#location').value.trim();
     const msg = root.querySelector('#msg');
+    const btn = root.querySelector('#submit');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> Creating account…`;
     try {
       const { token, user } = await Api.register({ name, email, password, location: location || undefined });
       Store.setToken(token);
@@ -106,7 +116,9 @@ Views.register = function (root) {
       App.refreshNav();
       App.navigate('dashboard');
     } catch (e) {
-      msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+      msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
+      btn.disabled = false;
+      btn.innerHTML = `Register`;
     }
   };
 };
@@ -120,29 +132,29 @@ Views.dashboard = async function (root) {
     const { profile } = await Api.getProfile(user.id);
     renderProfile(root, profile, true);
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
 function renderProfile(root, profile, editable) {
   const skillBadges = profile.skills.length
-    ? profile.skills.map((s) => `<span class="badge badge-skill">${s.skill} <span class="muted">(${s.level})</span>${editable ? ` <a href="#" data-remove="${s.id}" style="color:#ff8a8a;"><i data-lucide="x" style="width: 12px; height: 12px; vertical-align: middle;"></i></a>` : ''}</span>`).join(' ')
+    ? profile.skills.map((s) => `<span class="badge badge-skill">${escapeHtml(s.skill)} <span class="muted">(${escapeHtml(s.level)})</span>${editable ? ` <a href="#" data-remove="${s.id}" style="color:#ff8a8a;"><i data-lucide="x" style="width: 12px; height: 12px; vertical-align: middle;"></i></a>` : ''}</span>`).join(' ')
     : `<span class="muted">No skills listed yet.</span>`;
   const communityBadges = profile.communities.length
-    ? profile.communities.map((c) => `<span class="badge">${c.name} <span class="muted">(${c.role})</span></span>`).join(' ')
+    ? profile.communities.map((c) => `<span class="badge">${escapeHtml(c.name)} <span class="muted">(${escapeHtml(c.role)})</span></span>`).join(' ')
     : `<span class="muted">Not a member of any community yet.</span>`;
   const trustScore = profile.trust ? profile.trust.score : 0;
-  const badges = (profile.badges || []).map((b) => `<span class="badge badge-matched">${b.badge}</span>`).join(' ') || '<span class="muted">No badges yet</span>';
+  const badges = (profile.badges || []).map((b) => `<span class="badge badge-matched">${escapeHtml(b.badge)}</span>`).join(' ') || '<span class="muted">No badges yet</span>';
   const endorsements = (profile.endorsements || []).length
-    ? profile.endorsements.map((e) => `<li><strong>${e.skill}</strong> — ${e.from ? e.from.name : 'someone'}${e.note ? `: "${e.note}"` : ''}</li>`).join('')
+    ? profile.endorsements.map((e) => `<li><strong>${escapeHtml(e.skill)}</strong> — ${e.from ? escapeHtml(e.from.name) : 'someone'}${e.note ? `: "${escapeHtml(e.note)}"` : ''}</li>`).join('')
     : '<li class="muted">No endorsements yet</li>';
 
   root.innerHTML = `
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
         <div>
-          <h3 style="margin-bottom:4px;"><span class="avatar-chip">${(profile.name || '?').charAt(0).toUpperCase()}</span>${profile.name}</h3>
-          <p class="muted" style="margin:0;"><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${profile.location || 'No location set'} · ${profile.availability === 'available' ? '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--green); color: var(--green); display: inline-block; vertical-align: middle;"></i>' : '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--amber); color: var(--amber); display: inline-block; vertical-align: middle;"></i>'} ${profile.availability || 'unknown'}</p>
+          <h3 style="margin-bottom:4px;"><span class="avatar-chip">${escapeHtml((profile.name || '?').charAt(0).toUpperCase())}</span>${escapeHtml(profile.name)}</h3>
+          <p class="muted" style="margin:0;"><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${escapeHtml(profile.location || 'No location set')} · ${profile.availability === 'available' ? '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--green); color: var(--green); display: inline-block; vertical-align: middle;"></i>' : '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--amber); color: var(--amber); display: inline-block; vertical-align: middle;"></i>'} ${escapeHtml(profile.availability || 'unknown')}</p>
         </div>
         ${editable ? `
         <div style="display:flex; gap:8px; align-items:center;">
@@ -176,7 +188,7 @@ function renderProfile(root, profile, editable) {
     </div>` : `
     ${Store.isLoggedIn() && Store.getUser() && Store.getUser().id !== profile.id ? `
     <div class="card">
-      <h3>Endorse ${profile.name}</h3>
+      <h3>Endorse ${escapeHtml(profile.name)}</h3>
       <div id="endorse-msg"></div>
       <input class="input" id="endorse-skill" placeholder="Skill to endorse" />
       <input class="input" id="endorse-note" placeholder="Optional note" />
@@ -204,18 +216,18 @@ function renderProfile(root, profile, editable) {
         const modalHtml = `
           <div id="profile-modal-msg"></div>
           <label class="muted">Name</label>
-          <input class="input" id="edit-name" value="${(profile.name || '').replace(/"/g, '&quot;')}" />
+          <input class="input" id="edit-name" value="${escapeAttr(profile.name || '')}" />
           <label class="muted">Location</label>
-          <input class="input" id="edit-location" value="${(profile.location || '').replace(/"/g, '&quot;')}" placeholder="e.g. Greenwood Sector 4" />
+          <input class="input" id="edit-location" value="${escapeAttr(profile.location || '')}" placeholder="e.g. Greenwood Sector 4" />
           <label class="muted">Availability</label>
           <select class="input" id="edit-availability">
             <option value="available" ${profile.availability === 'available' ? 'selected' : ''}>available</option>
             <option value="busy" ${profile.availability === 'busy' ? 'selected' : ''}>busy</option>
           </select>
           <label class="muted">Bio</label>
-          <textarea class="input" id="edit-bio" rows="2" placeholder="Short bio">${profile.bio || ''}</textarea>
+          <textarea class="input" id="edit-bio" rows="2" placeholder="Short bio">${escapeHtml(profile.bio || '')}</textarea>
           <label class="muted">Interests (comma-separated)</label>
-          <input class="input" id="edit-interests" value="${Array.isArray(profile.interests) ? profile.interests.join(', ') : (profile.interests || '')}" />
+          <input class="input" id="edit-interests" value="${escapeAttr(Array.isArray(profile.interests) ? profile.interests.join(', ') : (profile.interests || ''))}" />
           
           <hr class="divider" style="margin:16px 0;" />
           <h4 style="margin:0 0 10px;">Add a Skill</h4>
@@ -257,7 +269,7 @@ function renderProfile(root, profile, editable) {
               modalContainer.querySelector('#modal-skill-name').value = '';
               skillMsgEl.innerHTML = `<div class="info-box" style="padding:6px 12px;font-size:12px;">Skill added!</div>`;
             } catch (err) {
-              skillMsgEl.innerHTML = `<div class="error-box" style="padding:6px 12px;font-size:12px;">${err.message}</div>`;
+              skillMsgEl.innerHTML = `<div class="error-box" style="padding:6px 12px;font-size:12px;">${escapeHtml(err.message)}</div>`;
             }
           };
         }
@@ -282,7 +294,7 @@ function renderProfile(root, profile, editable) {
               App.refreshNav();
               App.navigate('dashboard');
             } catch (err) {
-              msgEl.innerHTML = `<div class="error-box">${err.message}</div>`;
+              msgEl.innerHTML = `<div class="error-box">${escapeHtml(err.message)}</div>`;
               saveBtn.disabled = false;
               saveBtn.innerHTML = `Save Profile`;
             }
@@ -302,7 +314,7 @@ function renderProfile(root, profile, editable) {
           await Api.endorse({ toUserId, skill, note });
           msg.innerHTML = `<div class="info-box">Endorsement sent.</div>`;
         } catch (e) {
-          msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+          msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
         }
       };
     }
@@ -316,7 +328,7 @@ function renderProfile(root, profile, editable) {
         msg.innerHTML = `<div class="info-box">Endorsement sent.</div>`;
         App.navigate('profile', { id: profile.id });
       } catch (e) {
-        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+        msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
       }
     };
   }
@@ -336,9 +348,9 @@ async function handleJoinCommunity(communityId, communityName, onSuccess) {
     if (res.requiresSwitch) {
       const modalContent = `
         <div class="info-box" style="margin-bottom:14px; border-color:var(--amber);">
-          <i data-lucide="alert-triangle" style="width: 14px; height: 14px; color: var(--amber); vertical-align: middle;"></i> You are currently an active member of <strong>${res.currentCommunity.name}</strong>.
+          <i data-lucide="alert-triangle" style="width: 14px; height: 14px; color: var(--amber); vertical-align: middle;"></i> You are currently an active member of <strong>${escapeHtml(res.currentCommunity.name)}</strong>.
         </div>
-        <p>SkillMesh enforces <strong>1 active community</strong> per user. Joining <strong>${res.targetCommunity.name}</strong> will automatically switch your membership.</p>
+        <p>SkillMesh enforces <strong>1 active community</strong> per user. Joining <strong>${escapeHtml(res.targetCommunity.name)}</strong> will automatically switch your membership.</p>
         <p class="muted" style="font-size:12.5px;">Note: If your previous community has 0 remaining members, it will be automatically dissolved.</p>
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
           <button class="btn" id="cancel-switch-btn">Cancel</button>
@@ -386,7 +398,7 @@ Views.profile = async function (root, params) {
     const { profile } = await Api.getProfile(params.id);
     renderProfile(root, profile, false);
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -421,11 +433,11 @@ Views.communities = async function (root) {
     }
     list.innerHTML = communities.map((c) => `
       <div class="card">
-        <h3>${c.name}</h3>
-        <p class="muted">${c.description || 'No description.'}</p>
+        <h3>${escapeHtml(c.name)}</h3>
+        <p class="muted">${escapeHtml(c.description || 'No description.')}</p>
         <p class="muted">${c.memberCount} member${c.memberCount === 1 ? '' : 's'}</p>
         <button class="btn" data-view="${c.id}">View</button>
-        ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-join="${c.id}" data-name="${(c.name || '').replace(/"/g, '&quot;')}">Join</button>` : ''}
+        ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-join="${c.id}" data-name="${escapeAttr(c.name)}">Join</button>` : ''}
       </div>
     `).join('');
     list.querySelectorAll('[data-view]').forEach((btn) => {
@@ -451,7 +463,7 @@ Views.communities = async function (root) {
         const { community } = await Api.createCommunity({ name, description });
         App.navigate('community', { id: community.id });
       } catch (e) {
-        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+        msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
       }
     };
   }
@@ -467,8 +479,8 @@ Views.community = async function (root, params) {
     const isOwner = me && community.ownerId === me.id;
     root.innerHTML = `
       <div class="card">
-        <h3>${community.name}</h3>
-        <p class="muted">${community.description || ''}</p>
+        <h3>${escapeHtml(community.name)}</h3>
+        <p class="muted">${escapeHtml(community.description || '')}</p>
         <p class="muted">${community.memberCount} members</p>
         ${Store.isLoggedIn() ? `
           ${!myMembership ? `<button class="btn btn-primary" id="join">Join</button>` : ''}
@@ -480,7 +492,7 @@ Views.community = async function (root, params) {
       </div>
       <div class="card">
         <h3>Members</h3>
-        ${members.map((m) => `<span class="badge" style="cursor:pointer;" data-profile="${m.id}">${m.name} <span class="muted">(${m.role})</span></span>`).join(' ') || '<span class="muted">No members yet.</span>'}
+        ${members.map((m) => `<span class="badge" style="cursor:pointer;" data-profile="${m.id}">${escapeHtml(m.name)} <span class="muted">(${escapeHtml(m.role)})</span></span>`).join(' ') || '<span class="muted">No members yet.</span>'}
       </div>
       <div class="card">
         <h3>Knowledge graph</h3>
@@ -514,7 +526,7 @@ Views.community = async function (root, params) {
     const { nodes, edges } = await Api.graph(community.id);
     GraphView.render(root.querySelector('#graph-container'), { nodes, edges });
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -539,22 +551,22 @@ Views.search = function (root, params) {
       const data = await Api.search({ query, communityId: params && params.communityId });
       renderSearchResults(results, data);
     } catch (e) {
-      results.innerHTML = `<div class="error-box">${e.message}</div>`;
+      results.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
     }
   };
 };
 
 function renderSearchResults(container, data) {
   const { understanding, results, mode, team, hiddenExperts } = data;
-  const skillBadges = understanding.skills.map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ') || '<span class="muted">none detected</span>';
+  const skillBadges = understanding.skills.map((s) => `<span class="badge badge-skill">${escapeHtml(s)}</span>`).join(' ') || '<span class="muted">none detected</span>';
 
   let teamBlock = '';
   if (mode === 'team_builder' && team) {
     teamBlock = `
       <div class="card">
         <h3>AI Team · ${team.coverage}% skill coverage · success prediction ${team.successPrediction}%</h3>
-        <p class="muted">Needed: ${team.neededSkills.join(', ') || '—'}
-          ${team.uncoveredSkills.length ? ` · Gaps: ${team.uncoveredSkills.join(', ')}` : ''}</p>
+        <p class="muted">Needed: ${escapeHtml((team.neededSkills || []).join(', ')) || '—'}
+          ${team.uncoveredSkills.length ? ` · Gaps: ${escapeHtml(team.uncoveredSkills.join(', '))}` : ''}</p>
         <p class="muted">Avg trust ${team.rationale.avgTrust} · Available ${team.rationale.availableRatio}% · Prior collabs ${team.rationale.priorCollaborations}</p>
       </div>`;
   }
@@ -568,9 +580,9 @@ function renderSearchResults(container, data) {
           <div class="result-row">
             <div class="result-main">
               <div>
-                <strong style="cursor:pointer;" data-profile="${h.user.id}">${h.user.name}</strong>
-                <p class="muted" style="margin:4px 0;">${h.reason}</p>
-                <div>${(h.inferredHits || []).map((s) => `<span class="badge badge-matched">${s}</span>`).join(' ')}</div>
+                <strong style="cursor:pointer;" data-profile="${h.user.id}">${escapeHtml(h.user.name)}</strong>
+                <p class="muted" style="margin:4px 0;">${escapeHtml(h.reason)}</p>
+                <div>${(h.inferredHits || []).map((s) => `<span class="badge badge-matched">${escapeHtml(s)}</span>`).join(' ')}</div>
               </div>
             </div>
             <div class="score-pill">trust ${h.trustScore}</div>
@@ -581,9 +593,9 @@ function renderSearchResults(container, data) {
 
   container.innerHTML = `
     <div class="card">
-      <p class="muted">Intent: <strong>${understanding.intent.replace('_', ' ')}</strong>
+      <p class="muted">Intent: <strong>${escapeHtml(understanding.intent.replace('_', ' '))}</strong>
         ${understanding.urgent ? '<span class="badge badge-urgent">urgent</span>' : ''}
-        ${mode ? `<span class="badge">${mode}</span>` : ''}
+        ${mode ? `<span class="badge">${escapeHtml(mode)}</span>` : ''}
       </p>
       <p class="muted">Detected skills: ${skillBadges}</p>
     </div>
@@ -596,9 +608,9 @@ function renderSearchResults(container, data) {
           <div class="result-main">
             <div class="result-rank">${i + 1}</div>
             <div>
-              <strong style="cursor:pointer;" data-profile="${r.user.id}">${r.user.name}</strong>
-              <p class="muted" style="margin:4px 0;"><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${r.user.location || 'Location unknown'} · ${r.user.availability === 'available' ? '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--green); color: var(--green); display: inline-block; vertical-align: middle;"></i>' : '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--amber); color: var(--amber); display: inline-block; vertical-align: middle;"></i>'} ${r.user.availability}${r.trustScore != null ? ` · trust ${r.trustScore}` : ''}</p>
-              <div>${r.skills.map((s) => `<span class="badge ${(r.matchedSkills || []).includes(s) ? 'badge-matched' : 'badge-skill'}">${s}</span>`).join(' ')}</div>
+              <strong style="cursor:pointer;" data-profile="${r.user.id}">${escapeHtml(r.user.name)}</strong>
+              <p class="muted" style="margin:4px 0;"><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${escapeHtml(r.user.location || 'Location unknown')} · ${r.user.availability === 'available' ? '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--green); color: var(--green); display: inline-block; vertical-align: middle;"></i>' : '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--amber); color: var(--amber); display: inline-block; vertical-align: middle;"></i>'} ${escapeHtml(r.user.availability)}${r.trustScore != null ? ` · trust ${r.trustScore}` : ''}</p>
+              <div>${r.skills.map((s) => `<span class="badge ${(r.matchedSkills || []).includes(s) ? 'badge-matched' : 'badge-skill'}">${escapeHtml(s)}</span>`).join(' ')}</div>
             </div>
           </div>
           <div class="score-pill">score ${r.score}</div>
@@ -643,17 +655,17 @@ Views.teams = function (root, params) {
       results.innerHTML = `
         <div class="card">
           <h3>Suggested team · coverage ${data.coverage}% · success ${data.successPrediction}%</h3>
-          <p class="muted">Skills needed: ${(data.neededSkills || []).join(', ')}
-            ${data.uncoveredSkills.length ? ` · Gaps: ${data.uncoveredSkills.join(', ')}` : ''}</p>
-          ${data.project ? `<p class="info-box">Project created: <a href="#project?id=${data.project.id}" style="color:var(--cyan);">${data.project.title}</a> — invites sent.</p>` : ''}
+          <p class="muted">Skills needed: ${escapeHtml((data.neededSkills || []).join(', '))}
+            ${data.uncoveredSkills.length ? ` · Gaps: ${escapeHtml(data.uncoveredSkills.join(', '))}` : ''}</p>
+          ${data.project ? `<p class="info-box">Project created: <a href="#project?id=${data.project.id}" style="color:var(--cyan);">${escapeHtml(data.project.title)}</a> — invites sent.</p>` : ''}
           ${data.team.map((m, i) => `
             <div class="result-row">
               <div class="result-main">
                 <div class="result-rank">${i + 1}</div>
                 <div>
-                  <strong style="cursor:pointer;" data-profile="${m.user.id}">${m.user.name}</strong>
-                  <p class="muted" style="margin:4px 0;">${m.user.availability} · trust ${m.trustScore} · covers ${(m.covers || []).join(', ') || '—'}</p>
-                  <div>${m.skills.map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ')}</div>
+                  <strong style="cursor:pointer;" data-profile="${m.user.id}">${escapeHtml(m.user.name)}</strong>
+                  <p class="muted" style="margin:4px 0;">${escapeHtml(m.user.availability)} · trust ${m.trustScore} · covers ${escapeHtml((m.covers || []).join(', ')) || '—'}</p>
+                  <div>${m.skills.map((s) => `<span class="badge badge-skill">${escapeHtml(s)}</span>`).join(' ')}</div>
                 </div>
               </div>
               <div class="score-pill">${m.score}</div>
@@ -665,7 +677,7 @@ Views.teams = function (root, params) {
         el.onclick = () => App.navigate('profile', { id: el.getAttribute('data-profile') });
       });
     } catch (e) {
-      results.innerHTML = `<div class="error-box">${e.message}</div>`;
+      results.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
     }
   };
 };
@@ -699,7 +711,7 @@ Views.projects = async function (root) {
         const { project } = await Api.createProject({ title, description, goal: description, timeline: timeline || undefined });
         App.navigate('project', { id: project.id });
       } catch (e) {
-        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+        msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
       }
     };
   }
@@ -712,9 +724,9 @@ Views.projects = async function (root) {
     }
     list.innerHTML = projects.map((p) => `
       <div class="card">
-        <h3>${p.title}</h3>
-        <p class="muted">${p.description || p.goal || ''}</p>
-        <p class="muted">${p.memberCount} joined · ${p.status}${p.timeline ? ` · ${p.timeline}` : ''}</p>
+        <h3>${escapeHtml(p.title)}</h3>
+        <p class="muted">${escapeHtml(p.description || p.goal || '')}</p>
+        <p class="muted">${p.memberCount} joined · ${escapeHtml(p.status)}${p.timeline ? ` · ${escapeHtml(p.timeline)}` : ''}</p>
         <button class="btn btn-primary" data-id="${p.id}">Open</button>
       </div>
     `).join('');
@@ -722,7 +734,7 @@ Views.projects = async function (root) {
       btn.onclick = () => App.navigate('project', { id: btn.getAttribute('data-id') });
     });
   } catch (e) {
-    root.querySelector('#list').innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.querySelector('#list').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -740,9 +752,9 @@ Views.project = async function (root, params) {
         const { messages } = await Api.projectMessages(project.id);
         discussionHtml = messages.map((m) => `
           <div class="msg-row ${m.announcement ? 'announcement' : ''}">
-            <strong>${m.from ? m.from.name : '?'}</strong>
+            <strong>${escapeHtml(m.from ? m.from.name : '?')}</strong>
             ${m.announcement ? '<span class="badge badge-urgent">announcement</span>' : ''}
-            <p>${m.body}</p>
+            <p>${escapeHtml(m.body)}</p>
             <p class="muted" style="font-size:12px;">${new Date(m.createdAt).toLocaleString()}</p>
           </div>
         `).join('') || '<p class="muted">No messages yet.</p>';
@@ -753,9 +765,9 @@ Views.project = async function (root, params) {
 
     root.innerHTML = `
       <div class="card">
-        <h3>${project.title}</h3>
-        <p class="muted">${project.description || ''}</p>
-        <p class="muted">Goal: ${project.goal || '—'} · Status: ${project.status}${project.timeline ? ` · ${project.timeline}` : ''}</p>
+        <h3>${escapeHtml(project.title)}</h3>
+        <p class="muted">${escapeHtml(project.description || '')}</p>
+        <p class="muted">Goal: ${escapeHtml(project.goal || '—')} · Status: ${escapeHtml(project.status)}${project.timeline ? ` · ${escapeHtml(project.timeline)}` : ''}</p>
         ${myMembership && myMembership.status === 'invited' ? `
           <button class="btn btn-primary" id="accept">Accept invite</button>
           <button class="btn" id="decline">Decline</button>
@@ -768,7 +780,7 @@ Views.project = async function (root, params) {
       <div class="card">
         <h3>Members</h3>
         ${project.members.map((m) => `
-          <span class="badge" style="cursor:pointer;" data-profile="${m.userId}">${m.name} <span class="muted">(${m.role} · ${m.status})</span></span>
+          <span class="badge" style="cursor:pointer;" data-profile="${m.userId}">${escapeHtml(m.name)} <span class="muted">(${escapeHtml(m.role)} · ${escapeHtml(m.status)})</span></span>
           ${isOwner && m.status === 'requested' ? `
             <button class="btn" data-approve="${m.userId}">Approve</button>
             <button class="btn" data-reject="${m.userId}">Reject</button>
@@ -816,7 +828,7 @@ Views.project = async function (root, params) {
           await Api.inviteToProject(project.id, { userId });
           msg.innerHTML = `<div class="info-box">Invite sent.</div>`;
         } catch (e) {
-          msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+          msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
         }
       };
     }
@@ -825,12 +837,19 @@ Views.project = async function (root, params) {
         const body = root.querySelector('#msg-body').value.trim();
         const announcement = root.querySelector('#announce').checked;
         if (!body) return;
-        await Api.sendMessage({ projectId: project.id, body, announcement });
-        App.navigate('project', { id: project.id });
+        const btn = root.querySelector('#send-msg');
+        btn.disabled = true;
+        try {
+          await Api.sendMessage({ projectId: project.id, body, announcement });
+          App.navigate('project', { id: project.id });
+        } catch (e) {
+          btn.disabled = false;
+          App.showToast(e.message || 'Failed to send message.');
+        }
       };
     }
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -861,9 +880,9 @@ Views.recommendations = async function (root) {
           <div class="result-row">
             <div class="result-main">
               <div>
-                <strong style="cursor:pointer;" data-profile="${r.user.id}">${r.user.name}</strong>
-                <p class="muted" style="margin:4px 0;"><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${r.user.location || '—'} · trust ${r.trustScore}</p>
-                <div>${(r.skills || r.matchedSkills || r.teachable || []).slice(0, 6).map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ')}</div>
+                <strong style="cursor:pointer;" data-profile="${r.user.id}">${escapeHtml(r.user.name)}</strong>
+                <p class="muted" style="margin:4px 0;"><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${escapeHtml(r.user.location || '—')} · trust ${r.trustScore}</p>
+                <div>${(r.skills || r.matchedSkills || r.teachable || []).slice(0, 6).map((s) => `<span class="badge badge-skill">${escapeHtml(s)}</span>`).join(' ')}</div>
               </div>
             </div>
             <div class="score-pill">${Math.round(r.score)}</div>
@@ -875,7 +894,7 @@ Views.recommendations = async function (root) {
       el.onclick = () => App.navigate('profile', { id: el.getAttribute('data-profile') });
     });
   } catch (e) {
-    root.querySelector('#recs').innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.querySelector('#recs').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -926,10 +945,10 @@ Views.opportunities = async function (root) {
     }
     list.innerHTML = opportunities.map((o) => `
       <div class="card">
-        <span class="badge">${o.type}</span>
-        <h3>${o.title}</h3>
-        <p class="muted">${o.description || ''}</p>
-        <div>${(o.skillsNeeded || []).map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ')}</div>
+        <span class="badge">${escapeHtml(o.type)}</span>
+        <h3>${escapeHtml(o.title)}</h3>
+        <p class="muted">${escapeHtml(o.description || '')}</p>
+        <div>${(o.skillsNeeded || []).map((s) => `<span class="badge badge-skill">${escapeHtml(s)}</span>`).join(' ')}</div>
         <p class="muted">${o.applicantCount || 0} applicants${o.matchCount ? ` · ${o.matchCount} skill match` : ''}</p>
         <button class="btn" data-view="${o.id}">View</button>
         ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-apply="${o.id}">Apply</button>` : ''}
@@ -958,7 +977,7 @@ Views.opportunities = async function (root) {
         const { opportunity } = await Api.createOpportunity({ type, title, description });
         App.navigate('opportunity', { id: opportunity.id });
       } catch (e) {
-        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+        msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
       }
     };
   }
@@ -973,11 +992,11 @@ Views.opportunity = async function (root, params) {
     const isCreator = me && opportunity.creatorId === me.id;
     root.innerHTML = `
       <div class="card">
-        <span class="badge">${opportunity.type}</span>
-        <h3>${opportunity.title}</h3>
-        <p class="muted">${opportunity.description || ''}</p>
-        <p class="muted">By ${opportunity.creator ? opportunity.creator.name : '—'} · ${opportunity.status}</p>
-        <div>${(opportunity.skillsNeeded || []).map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ')}</div>
+        <span class="badge">${escapeHtml(opportunity.type)}</span>
+        <h3>${escapeHtml(opportunity.title)}</h3>
+        <p class="muted">${escapeHtml(opportunity.description || '')}</p>
+        <p class="muted">By ${escapeHtml(opportunity.creator ? opportunity.creator.name : '—')} · ${escapeHtml(opportunity.status)}</p>
+        <div>${(opportunity.skillsNeeded || []).map((s) => `<span class="badge badge-skill">${escapeHtml(s)}</span>`).join(' ')}</div>
         ${Store.isLoggedIn() && opportunity.status === 'open' && !isCreator ? `<button class="btn btn-primary" id="apply" style="margin-top:12px;">Apply</button>` : ''}
       </div>
       <div class="card">
@@ -986,8 +1005,8 @@ Views.opportunity = async function (root, params) {
           <div class="result-row">
             <div class="result-main">
               <div>
-                <strong>${a.user ? a.user.name : '?'}</strong>
-                <p class="muted">${a.status} · trust ${a.trustScore}${a.message ? ` · "${a.message}"` : ''}</p>
+                <strong>${escapeHtml(a.user ? a.user.name : '?')}</strong>
+                <p class="muted">${escapeHtml(a.status)} · trust ${a.trustScore}${a.message ? ` · "${escapeHtml(a.message)}"` : ''}</p>
               </div>
             </div>
             ${isCreator && a.status === 'pending' ? `
@@ -1017,7 +1036,7 @@ Views.opportunity = async function (root, params) {
       };
     });
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -1206,7 +1225,7 @@ Views.messages = async function (root) {
             <button class="filter-chip ${currentFilter === 'starred' ? 'active' : ''}" data-filter="starred"><i data-lucide="star" style="width: 18px; height: 18px; vertical-align: middle;"></i> Starred</button>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
-            <input type="text" class="input inbox-search-input" id="inbox-search" placeholder="Search messages..." value="${searchQuery}" />
+            <input type="text" class="input inbox-search-input" id="inbox-search" placeholder="Search messages..." value="${escapeAttr(searchQuery)}" />
           </div>
         </div>
 
@@ -1240,10 +1259,10 @@ Views.messages = async function (root) {
                     <div class="card-center-content">
                       <div class="card-title">
                         ${!item.read ? '<span class="unread-indicator-dot" title="Unread"></span>' : ''}
-                        <span>${item.title}</span>
+                        <span>${escapeHtml(item.title)}</span>
                         ${item.starred ? '<span style="color:var(--amber);"><i data-lucide="star" style="width: 18px; height: 18px; vertical-align: middle;"></i></span>' : ''}
                       </div>
-                      <p class="card-preview">${item.preview || 'No text preview available.'}</p>
+                      <p class="card-preview">${escapeHtml(item.preview || 'No text preview available.')}</p>
                     </div>
 
                     <!-- Top Right: Relative Timestamp & Hover Action Bar -->
@@ -1391,7 +1410,7 @@ Views.messages = async function (root) {
             App.showToast('Message sent successfully!');
             App.navigate('messages');
           } catch (e) {
-            msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+            msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
           }
         };
       }
@@ -1399,7 +1418,7 @@ Views.messages = async function (root) {
 
     renderInbox();
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -1438,7 +1457,7 @@ Views.organizations = async function (root) {
         const { organization } = await Api.createOrganization({ name, type, description });
         App.navigate('organization', { id: organization.id });
       } catch (e) {
-        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+        msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
       }
     };
   }
@@ -1447,9 +1466,9 @@ Views.organizations = async function (root) {
     const list = root.querySelector('#list');
     list.innerHTML = organizations.length ? organizations.map((o) => `
       <div class="card">
-        <span class="badge">${o.type}</span>
-        <h3>${o.name}</h3>
-        <p class="muted">${o.description || ''}</p>
+        <span class="badge">${escapeHtml(o.type)}</span>
+        <h3>${escapeHtml(o.name)}</h3>
+        <p class="muted">${escapeHtml(o.description || '')}</p>
         <p class="muted">${o.memberCount} members</p>
         <button class="btn btn-primary" data-id="${o.id}">Open</button>
       </div>
@@ -1458,7 +1477,7 @@ Views.organizations = async function (root) {
       btn.onclick = () => App.navigate('organization', { id: btn.getAttribute('data-id') });
     });
   } catch (e) {
-    root.querySelector('#list').innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.querySelector('#list').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -1468,20 +1487,20 @@ Views.organization = async function (root, params) {
     const { organization, members, opportunities } = await Api.getOrganization(params.id);
     root.innerHTML = `
       <div class="card">
-        <span class="badge">${organization.type}</span>
-        <h3>${organization.name}</h3>
-        <p class="muted">${organization.description || ''}</p>
+        <span class="badge">${escapeHtml(organization.type)}</span>
+        <h3>${escapeHtml(organization.name)}</h3>
+        <p class="muted">${escapeHtml(organization.description || '')}</p>
         ${Store.isLoggedIn() ? `<button class="btn btn-primary" id="join">Join</button>` : ''}
       </div>
       <div class="card">
         <h3>Members</h3>
-        ${members.map((m) => `<span class="badge">${m.name} <span class="muted">(${m.role})</span></span>`).join(' ')}
+        ${members.map((m) => `<span class="badge">${escapeHtml(m.name)} <span class="muted">(${escapeHtml(m.role)})</span></span>`).join(' ')}
       </div>
       <div class="card">
         <h3>Open recruitments</h3>
         ${opportunities.length ? opportunities.map((o) => `
           <div class="result-row">
-            <div><strong>${o.title}</strong> <span class="badge">${o.type}</span></div>
+            <div><strong>${escapeHtml(o.title)}</strong> <span class="badge">${escapeHtml(o.type)}</span></div>
           </div>
         `).join('') : '<p class="muted">None yet.</p>'}
       </div>
@@ -1511,11 +1530,11 @@ Views.organization = async function (root, params) {
           const { opportunity } = await Api.recruit(organization.id, { title, description, skillsNeeded });
           msg.innerHTML = `<div class="info-box">Posted. <a href="#opportunity?id=${opportunity.id}" style="color:var(--cyan);">View</a></div>`;
         } catch (e) {
-          msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+          msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
         }
       };
     }
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };

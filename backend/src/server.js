@@ -1,10 +1,14 @@
 const http = require('http');
-const { Router } = require('./utils/router');
+const { Router, securityHeaders, rateLimit } = require('./utils/router');
 const { config } = require('./config');
 const { load, getState, close } = require('./db');
+const { requireAuth } = require('./middleware/requireAuth');
+const { serveStatic } = require('./static');
+const { ensureDailyBackup } = require('./backup');
 
 async function main() {
   await load();
+  await ensureDailyBackup();
 
   const state = getState();
   if (state.users.length === 0) {
@@ -14,6 +18,22 @@ async function main() {
   }
 
   const app = new Router();
+  app.use(securityHeaders);
+  app.use(rateLimit);
+
+  app.get('/api/me', requireAuth, (req, res, next) => {
+    try {
+      const st = getState();
+      const user = st.users.find((u) => u.id === req.user.id);
+      if (!user) {
+        const err = new Error('User not found');
+        err.status = 404;
+        throw err;
+      }
+      const { passwordHash, salt, ...rest } = user;
+      res.json({ user: rest });
+    } catch (e) { next(e); }
+  });
 
   app.get('/health', (req, res) => {
     res.json({
@@ -74,10 +94,28 @@ async function main() {
   mount('/api/autonomy', './routes/autonomy');
 
   const server = http.createServer((req, res) => {
+    // Serve the SPA static assets (with long-lived cache headers) for any
+    // non-API GET request. Falling through to the router leaves a 404 for
+    // unknown paths.
+    if (req.method === 'GET' && !req.url.startsWith('/api')) {
+      serveStatic(req, res, config.STATIC_DIR).then((served) => {
+        if (served) return;
+        app.handle(req, res).catch((e) => {
+          console.error(e);
+          if (!res.writableEnded) {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: 'Internal server error' }));
+          }
+        });
+      });
+      return;
+    }
     app.handle(req, res).catch((e) => {
       console.error(e);
-      res.statusCode = 500;
-      res.end(JSON.stringify({ error: 'Internal server error' }));
+      if (!res.writableEnded) {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ error: 'Internal server error' }));
+      }
     });
   });
 
@@ -96,6 +134,16 @@ async function main() {
   };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
+
+  // Zero-crash resilience: surface unhandled rejections instead of crashing,
+  // and convert fatal exceptions into a graceful shutdown.
+  process.on('unhandledRejection', (reason) => {
+    console.error('[SkillMesh] unhandledRejection:', reason);
+  });
+  process.on('uncaughtException', (err) => {
+    console.error('[SkillMesh] uncaughtException:', err);
+    shutdown().catch(() => process.exit(1));
+  });
 
   return server;
 }

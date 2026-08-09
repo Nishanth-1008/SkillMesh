@@ -6,6 +6,61 @@
 const { URL } = require('url');
 const { config } = require('../config');
 
+// ---------- CORS whitelist ----------
+// `ALLOWED_ORIGINS` (comma-separated) or legacy `CORS_ORIGIN`. `*` = allow all
+// (local dev only). Any other origin gets no CORS headers, so the browser
+// blocks the cross-origin request entirely.
+function isOriginAllowed(origin) {
+  const list = config.ALLOWED_ORIGINS || [];
+  if (list.includes('*')) return '*';
+  return list.includes(origin) ? origin : null;
+}
+
+// ---------- Rate limiter (100 req/min per IP) ----------
+const ipBuckets = new Map();
+function rateLimit(req, res, next) {
+  const max = Math.max(1, config.RATE_LIMIT_PER_MINUTE);
+  const ip = req.socket.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+  const now = Date.now();
+  const bucket = ipBuckets.get(ip) || { count: 0, resetAt: now + 60_000 };
+
+  if (now > bucket.resetAt) {
+    bucket.count = 0;
+    bucket.resetAt = now + 60_000;
+  }
+  bucket.count += 1;
+  ipBuckets.set(ip, bucket);
+
+  if (bucket.count > max) {
+    const retryAfterSec = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+    res.setHeader('Retry-After', String(retryAfterSec));
+    res.setHeader('X-RateLimit-Limit', String(max));
+    res.setHeader('X-RateLimit-Remaining', '0');
+    const err = new Error('Too many requests — please slow down and try again in a moment.');
+    err.status = 429;
+    return next(err);
+  }
+  res.setHeader('X-RateLimit-Limit', String(max));
+  res.setHeader('X-RateLimit-Remaining', String(Math.max(0, max - bucket.count)));
+  next();
+}
+
+// Clean up idle buckets periodically so memory stays bounded.
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, bucket] of ipBuckets) {
+    if (now > bucket.resetAt) ipBuckets.delete(ip);
+  }
+}, 60_000).unref();
+
+function securityHeaders(req, res, next) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+}
+
 function pathToRegex(path) {
   const paramNames = [];
   const pattern = path
@@ -54,16 +109,25 @@ class Router {
       res.end(body);
     };
 
-    // CORS (frontend runs on a different port during dev)
-    const origin = config.CORS_ORIGIN || '*';
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-    if (origin !== '*') {
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    // CORS — reflect only whitelisted origins; block everything else.
+    const reqOrigin = req.headers['origin'] || '';
+    const allowed = isOriginAllowed(reqOrigin);
+    if (allowed) {
+      res.setHeader('Access-Control-Allow-Origin', allowed === '*' ? '*' : allowed);
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+      if (allowed !== '*') {
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+      }
       res.setHeader('Vary', 'Origin');
-    }    if (req.method === 'OPTIONS') {
-      res.statusCode = 204;
+    } else if (reqOrigin) {
+      // Unauthorized cross-origin request: no CORS headers → browser blocks it.
+      const err = new Error('Origin not allowed');
+      err.status = 403;
+      return sendError(res, err);
+    }
+    if (req.method === 'OPTIONS') {
+      res.statusCode = allowed ? 204 : 403;
       return res.end();
     }
 
@@ -149,4 +213,4 @@ function sendError(res, err) {
   res.status(status).json({ error: err.message || 'Internal server error' });
 }
 
-module.exports = { Router };
+module.exports = { Router, securityHeaders, rateLimit, isOriginAllowed };

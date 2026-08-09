@@ -16,8 +16,8 @@ Views.analytics = async function (root) {
           <div class="card">
             <h3>Personalized insights</h3>
             <p class="muted">Trust ${insights.trustScore}</p>
-            ${(insights.insights || []).map((i) => `<p class="info-box">${i.message}</p>`).join('') || '<p class="muted">No insights yet — join a community and add skills.</p>'}
-            ${(insights.learningRecommendations || []).length ? `<p><strong>Learn next:</strong> ${insights.learningRecommendations.map((l) => `<span class="badge badge-skill">${l.skill}</span>`).join(' ')}</p>` : ''}
+            ${(insights.insights || []).map((i) => `<p class="info-box">${escapeHtml(i.message)}</p>`).join('') || '<p class="muted">No insights yet — join a community and add skills.</p>'}
+            ${(insights.learningRecommendations || []).length ? `<p><strong>Learn next:</strong> ${insights.learningRecommendations.map((l) => `<span class="badge badge-skill">${escapeHtml(l.skill)}</span>`).join(' ')}</p>` : ''}
           </div>`;
       } catch { /* optional */ }
     }
@@ -26,7 +26,7 @@ Views.analytics = async function (root) {
       <div class="card">
         <h3>Community Intelligence</h3>
         <p class="muted">Skill gaps, health scores, predictions, and member insights. <span class="badge">demo AI</span></p>
-        <select class="input" id="cid">${communities.map((c) => `<option value="${c.id}">${c.name}</option>`).join('')}</select>
+        <select class="input" id="cid">${communities.map((c) => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select>
         <button class="btn btn-primary" id="load">Load dashboard</button>
       </div>
       <div id="dash"></div>
@@ -52,7 +52,7 @@ Views.analytics = async function (root) {
           </div>
           <div class="card"><h3>Milestones</h3>
             ${(milestones.milestones || []).map((m) => `
-              <p><strong>${m.label}</strong> ${m.reached ? '<i data-lucide="check" style="width: 14px; height: 14px; color: var(--green);"></i>' : `${m.progress}%`}
+              <p><strong>${escapeHtml(m.label)}</strong> ${m.reached ? '<i data-lucide="check" style="width: 14px; height: 14px; color: var(--green);"></i>' : `${m.progress}%`}
               <div class="trust-track"><div class="trust-fill" style="width:${m.progress}%"></div></div></p>
             `).join('') || '<p class="muted">None</p>'}
           </div>
@@ -60,21 +60,21 @@ Views.analytics = async function (root) {
         <div class="card">
           <h3>Skill gaps</h3>
           ${(d.skills.gaps || []).map((g) => `
-            <div class="result-row"><div><strong>${g.skill}</strong> <span class="badge badge-urgent">${g.severity}</span>
-              <p class="muted">${g.recommendation}</p></div></div>
+            <div class="result-row"><div><strong>${escapeHtml(g.skill)}</strong> <span class="badge badge-urgent">${escapeHtml(g.severity)}</span>
+              <p class="muted">${escapeHtml(g.recommendation)}</p></div></div>
           `).join('') || '<p class="muted">No gaps detected.</p>'}
         </div>
         ${forecast ? `
         <div class="card">
           <h3>Forecast</h3>
-          <p class="muted">Health outlook: <strong>${forecast.healthTrend.outlook}</strong> (now ${forecast.healthTrend.current})</p>
-          <p class="muted">Volunteer demand: ${forecast.volunteerForecast.forecast} · ${forecast.volunteerForecast.openRoles} open roles</p>
-          ${(forecast.crisisRisk || []).map((r) => `<p class="muted"><i data-lucide="alert-triangle" style="width: 14px; height: 14px; color: var(--amber);"></i> ${r.detail}</p>`).join('')}
+          <p class="muted">Health outlook: <strong>${escapeHtml(forecast.healthTrend.outlook)}</strong> (now ${forecast.healthTrend.current})</p>
+          <p class="muted">Volunteer demand: ${escapeHtml(forecast.volunteerForecast.forecast)} · ${forecast.volunteerForecast.openRoles} open roles</p>
+          ${(forecast.crisisRisk || []).map((r) => `<p class="muted"><i data-lucide="alert-triangle" style="width: 14px; height: 14px; color: var(--amber);"></i> ${escapeHtml(r.detail)}</p>`).join('')}
         </div>` : ''}
         <div class="card">
           <h3>Emerging leaders</h3>
           ${(d.predictions.emergingLeaders || []).map((l) => `
-            <span class="badge badge-matched">${l.user.name} (${l.leadershipScore})</span>
+            <span class="badge badge-matched">${escapeHtml(l.user.name)} (${l.leadershipScore})</span>
           `).join(' ') || '<p class="muted">None yet.</p>'}
         </div>
       `;
@@ -82,7 +82,7 @@ Views.analytics = async function (root) {
     root.querySelector('#load').onclick = load;
     load();
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -126,10 +126,10 @@ Views.events = async function (root) {
 
     listEl.innerHTML = filtered.length ? filtered.map((e) => `
       <div class="card">
-        <span class="badge">${e.type || 'event'}</span>
-        <h3>${e.title}</h3>
-        <p class="muted">${e.description || ''}</p>
-        <p class="muted">${e.startAt ? new Date(e.startAt).toLocaleString() : 'TBD'} · ${e.registered || 0} registered · ${e.status}</p>
+        <span class="badge">${escapeHtml(e.type || 'event')}</span>
+        <h3>${escapeHtml(e.title)}</h3>
+        <p class="muted">${escapeHtml(e.description || '')}</p>
+        <p class="muted">${e.startAt ? new Date(e.startAt).toLocaleString() : 'TBD'} · ${e.registered || 0} registered · ${escapeHtml(e.status)}</p>
         <button class="btn" data-view="${e.id}">Open</button>
         ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-reg="${e.id}">Register</button>` : ''}
       </div>
@@ -189,7 +189,7 @@ Views.events = async function (root) {
 
           await loadEventsList();
         } catch (e) {
-          msgEl.innerHTML = `<div class="error-box">${e.message}</div>`;
+          msgEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
           createBtn.disabled = false;
           createBtn.innerHTML = `Save Event`;
         }
@@ -208,20 +208,20 @@ Views.event = async function (root, params) {
     const isCreator = me && event.creatorId === me.id;
     root.innerHTML = `
       <div class="card">
-        <span class="badge">${event.type || 'event'}</span>
-        <h3>${event.title}</h3>
-        <p class="muted">${event.description || ''}</p>
-        <p class="muted">${event.startAt ? new Date(event.startAt).toLocaleString() : 'TBD'} · ${event.status}
-          ${event.location ? ` · ${event.location}` : ''}</p>
-        <div>${(event.skillsNeeded || []).map((s) => `<span class="badge badge-skill">${s}</span>`).join(' ')}</div>
+        <span class="badge">${escapeHtml(event.type || 'event')}</span>
+        <h3>${escapeHtml(event.title)}</h3>
+        <p class="muted">${escapeHtml(event.description || '')}</p>
+        <p class="muted">${event.startAt ? new Date(event.startAt).toLocaleString() : 'TBD'} · ${escapeHtml(event.status)}
+          ${event.location ? ` · ${escapeHtml(event.location)}` : ''}</p>
+        <div>${(event.skillsNeeded || []).map((s) => `<span class="badge badge-skill">${escapeHtml(s)}</span>`).join(' ')}</div>
         ${Store.isLoggedIn() && event.status === 'upcoming' ? `<button class="btn btn-primary" id="reg" style="margin-top:12px;">Register</button>` : ''}
-        ${event.impactReport ? `<div class="info-box" style="margin-top:12px;">Impact: ${event.impactReport.summary || ''} · ${event.impactReport.peopleHelped || 0} people · ${event.impactReport.volunteerHours || 0}h</div>` : ''}
+        ${event.impactReport ? `<div class="info-box" style="margin-top:12px;">Impact: ${escapeHtml(event.impactReport.summary || '')} · ${event.impactReport.peopleHelped || 0} people · ${event.impactReport.volunteerHours || 0}h</div>` : ''}
       </div>
       <div class="card">
         <h3>Attendance (${attendance.length})</h3>
         ${attendance.map((a) => `
           <div class="result-row">
-            <div><strong>${a.user ? a.user.name : '?'}</strong> <span class="badge">${a.status}</span></div>
+            <div><strong>${escapeHtml(a.user ? a.user.name : '?')}</strong> <span class="badge">${escapeHtml(a.status)}</span></div>
             ${isCreator && a.status === 'registered' ? `<button class="btn btn-primary" data-checkin="${a.userId}">Check in</button>` : ''}
           </div>
         `).join('') || '<p class="muted">No registrations yet.</p>'}
@@ -256,12 +256,12 @@ Views.event = async function (root, params) {
           });
           App.navigate('event', { id: event.id });
         } catch (e) {
-          root.querySelector('#impact-msg').innerHTML = `<div class="error-box">${e.message}</div>`;
+          root.querySelector('#impact-msg').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
         }
       };
     }
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -276,7 +276,7 @@ Views.leaderboard = async function (root) {
       ${mine ? `<div class="card">
         <h3>Your rewards</h3>
         <div class="stat-big">${mine.points.balance} pts</div>
-        <p>${(mine.achievements || []).map((a) => `<span class="badge badge-matched">${a.label || a.achievement}</span>`).join(' ') || '<span class="muted">No achievements yet</span>'}</p>
+        <p>${(mine.achievements || []).map((a) => `<span class="badge badge-matched">${escapeHtml(a.label || a.achievement)}</span>`).join(' ') || '<span class="muted">No achievements yet</span>'}</p>
       </div>` : ''}
       <div class="card">
         <h3>Leaderboard</h3>
@@ -284,7 +284,7 @@ Views.leaderboard = async function (root) {
           <div class="result-row">
             <div class="result-main">
               <div class="result-rank">${r.rank}</div>
-              <div><strong>${r.user.name}</strong>
+              <div><strong>${escapeHtml(r.user.name)}</strong>
                 <p class="muted">${r.achievementCount} achievements · ${r.contributionPoints} contrib pts</p>
               </div>
             </div>
@@ -294,7 +294,7 @@ Views.leaderboard = async function (root) {
       </div>
     `;
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -311,12 +311,12 @@ Views.admin = async function (root) {
     ]);
     root.innerHTML = `
       <div class="card">
-        <h3>Admin · ${communities.map((c) => c.name).join(', ')}</h3>
+        <h3>Admin · ${communities.map((c) => escapeHtml(c.name)).join(', ')}</h3>
         <p class="muted">Owner-only moderation, audit logs, and member overview.</p>
       </div>
       <div class="card">
         <h3>Members (${users.length})</h3>
-        ${users.map((u) => `<span class="badge" style="cursor:pointer;" data-p="${u.id}">${u.name}</span>`).join(' ')}
+        ${users.map((u) => `<span class="badge" style="cursor:pointer;" data-p="${u.id}">${escapeHtml(u.name)}</span>`).join(' ')}
       </div>
       <div class="card">
         <h3>Moderate</h3>
@@ -332,14 +332,14 @@ Views.admin = async function (root) {
       <div class="card">
         <h3>Audit log</h3>
         ${(audit.auditLogs || []).slice(0, 15).map((l) => `
-          <div class="msg-row"><code>${l.action}</code>
+          <div class="msg-row"><code>${escapeHtml(l.action)}</code>
             <p class="muted" style="font-size:12px;">${new Date(l.createdAt).toLocaleString()}</p></div>
         `).join('') || '<p class="muted">No audit entries yet.</p>'}
       </div>
       <div class="card">
         <h3>Open reports</h3>
         ${(audit.reports || []).map((r) => `
-          <p class="muted">${r.targetType} ${r.targetId}: ${r.reason} <span class="badge">${r.status}</span></p>
+          <p class="muted">${escapeHtml(r.targetType)} ${escapeHtml(r.targetId)}: ${escapeHtml(r.reason)} <span class="badge">${escapeHtml(r.status)}</span></p>
         `).join('') || '<p class="muted">No reports.</p>'}
       </div>
     `;
@@ -358,11 +358,11 @@ Views.admin = async function (root) {
         msg.innerHTML = `<div class="info-box">Moderation applied.</div>`;
         App.navigate('admin');
       } catch (e) {
-        msg.innerHTML = `<div class="error-box">${e.message}</div>`;
+        msg.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
       }
     };
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}<p class="muted">You must own at least one community.</p></div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}<p class="muted">You must own at least one community.</p></div>`;
   }
 };
 
@@ -381,8 +381,8 @@ Views.hub = async function (root) {
       <div class="grid">
         ${(data.directory || []).map((c) => c && `
           <div class="card">
-            <h3>${c.name}</h3>
-            <p class="muted">${c.description || ''}</p>
+            <h3>${escapeHtml(c.name)}</h3>
+            <p class="muted">${escapeHtml(c.description || '')}</p>
             <p class="muted">${c.stats.members} members · ${c.stats.projects} projects · ${c.stats.openOpportunities} open roles</p>
             <button class="btn" data-c="${c.id}">Open community</button>
           </div>
@@ -390,10 +390,10 @@ Views.hub = async function (root) {
       </div>
       <div class="card">
         <h3>Federation &amp; partnerships</h3>
-        ${(parts.federations || []).map((f) => `<p><span class="badge badge-matched">${f.name}</span> <span class="muted">${f.region}</span></p>`).join('') || '<p class="muted">No federations yet.</p>'}
+        ${(parts.federations || []).map((f) => `<p><span class="badge badge-matched">${escapeHtml(f.name)}</span> <span class="muted">${escapeHtml(f.region)}</span></p>`).join('') || '<p class="muted">No federations yet.</p>'}
         ${(parts.partnerships || []).map((p) => `
           <div class="result-row">
-            <div class="muted">${p.fromCommunityId.slice(0, 8)}… → ${p.toCommunityId.slice(0, 8)}… <span class="badge">${p.status}</span></div>
+            <div class="muted">${p.fromCommunityId.slice(0, 8)}… → ${p.toCommunityId.slice(0, 8)}… <span class="badge">${escapeHtml(p.status)}</span></div>
             ${Store.isLoggedIn() && p.status === 'pending' ? `<button class="btn btn-primary" data-accept-p="${p.id}">Accept</button>` : ''}
           </div>
         `).join('')}
@@ -409,7 +409,7 @@ Views.hub = async function (root) {
       <div class="card">
         <h3>Open opportunities</h3>
         ${(data.openOpportunities || []).map((o) => `
-          <div class="result-row"><div><strong>${o.title}</strong> <span class="badge">${o.type}</span></div>
+          <div class="result-row"><div><strong>${escapeHtml(o.title)}</strong> <span class="badge">${escapeHtml(o.type)}</span></div>
           <button class="btn" data-o="${o.id}">View</button></div>
         `).join('') || '<p class="muted">None.</p>'}
       </div>
@@ -436,12 +436,12 @@ Views.hub = async function (root) {
           });
           App.navigate('hub');
         } catch (e) {
-          root.querySelector('#part-msg').innerHTML = `<div class="error-box">${e.message}</div>`;
+          root.querySelector('#part-msg').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
         }
       };
     }
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -479,8 +479,8 @@ Views.emergency = async function (root) {
             ${result.recommendedResponders.map((r, i) => `
               <div class="result-row">
                 <div class="result-main"><div class="result-rank">${i + 1}</div>
-                  <div><strong>${r.user.name}</strong>
-                    <p class="muted">${r.matchedSkills.join(', ')} · ETA ~${r.etaMinutes}m · trust ${r.trustScore}</p>
+                  <div><strong>${escapeHtml(r.user.name)}</strong>
+                    <p class="muted">${escapeHtml(r.matchedSkills.join(', '))} · ETA ~${r.etaMinutes}m · trust ${r.trustScore}</p>
                   </div>
                 </div>
                 <div class="score-pill">${r.score}</div>
@@ -489,7 +489,7 @@ Views.emergency = async function (root) {
           </div>`;
         loadList();
       } catch (e) {
-        root.querySelector('#msg').innerHTML = `<div class="error-box">${e.message}</div>`;
+        root.querySelector('#msg').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
       }
     };
   }
@@ -501,8 +501,8 @@ Views.emergency = async function (root) {
       <div class="card"><h3>Incidents</h3>
         ${emergencies.map((e) => `
           <div class="result-row">
-            <div><strong>${e.title}</strong> <span class="badge ${e.status === 'active' ? 'badge-urgent' : ''}">${e.severity} · ${e.status}</span>
-              <p class="muted">${(e.skillsNeeded || []).join(', ')}</p></div>
+            <div><strong>${escapeHtml(e.title)}</strong> <span class="badge ${e.status === 'active' ? 'badge-urgent' : ''}">${escapeHtml(e.severity)} · ${escapeHtml(e.status)}</span>
+              <p class="muted">${(e.skillsNeeded || []).map((s) => escapeHtml(s)).join(', ')}</p></div>
             <div>
               ${Store.isLoggedIn() && e.status === 'active' ? `<button class="btn btn-primary" data-resp="${e.id}">I can help</button>` : ''}
               ${me && e.creatorId === me.id && e.status === 'active' ? `<button class="btn" data-resolve="${e.id}">Resolve</button>` : ''}
@@ -540,7 +540,7 @@ Views.developers = async function (root) {
         <button class="btn btn-primary" id="key">Generate API key</button>
         <div id="key-out"></div>
         <p class="muted" style="margin-top:10px;">Existing keys:</p>
-        ${(keys.apiKeys || []).map((k) => `<code>${k.key}</code> <span class="muted">${k.name}</span><br/>`).join('') || '<p class="muted">None</p>'}
+        ${(keys.apiKeys || []).map((k) => `<code>${escapeHtml(k.key)}</code> <span class="muted">${escapeHtml(k.name)}</span><br/>`).join('') || '<p class="muted">None</p>'}
       </div>
       <div class="card">
         <h3>Webhooks</h3>
@@ -554,7 +554,7 @@ Views.developers = async function (root) {
         <h3>Available integrations</h3>
         ${(integ.available || []).map((i) => `
           <div class="result-row">
-            <div><strong>${i.provider}</strong> <span class="badge">${i.status}</span></div>
+            <div><strong>${escapeHtml(i.provider)}</strong> <span class="badge">${escapeHtml(i.status)}</span></div>
             <button class="btn" data-p="${i.provider}">Connect stub</button>
           </div>
         `).join('')}
@@ -563,29 +563,29 @@ Views.developers = async function (root) {
         <h3>Plugin marketplace</h3>
         ${(plugins.marketplace || []).map((p) => `
           <div class="result-row">
-            <div><strong>${p.name}</strong> <span class="muted">v${p.version}</span>
-              <p class="muted">${p.description}</p></div>
+            <div><strong>${escapeHtml(p.name)}</strong> <span class="muted">v${escapeHtml(p.version)}</span>
+              <p class="muted">${escapeHtml(p.description)}</p></div>
             <button class="btn" data-install="${p.name}" data-ver="${p.version}">Install</button>
           </div>
         `).join('')}
-        <p class="muted">Installed: ${(plugins.installed || []).map((p) => p.name).join(', ') || 'none'}</p>
+        <p class="muted">Installed: ${(plugins.installed || []).map((p) => escapeHtml(p.name)).join(', ') || 'none'}</p>
       </div>
     `;
     root.querySelector('#key').onclick = async () => {
       const { apiKey } = await Api.createApiKey({ name: 'ui-generated' });
-      root.querySelector('#key-out').innerHTML = `<div class="info-box">Key: <code>${apiKey.key}</code> — copy it now.</div>`;
+      root.querySelector('#key-out').innerHTML = `<div class="info-box">Key: <code>${escapeHtml(apiKey.key)}</code> — copy it now.</div>`;
     };
     root.querySelector('#wh-create').onclick = async () => {
       try {
         const { webhook } = await Api.createWebhook({ url: root.querySelector('#wh-url').value.trim() });
-        root.querySelector('#wh-msg').innerHTML = `<div class="info-box">Created. Secret: <code>${webhook.secret}</code></div>`;
+        root.querySelector('#wh-msg').innerHTML = `<div class="info-box">Created. Secret: <code>${escapeHtml(webhook.secret)}</code></div>`;
       } catch (e) {
-        root.querySelector('#wh-msg').innerHTML = `<div class="error-box">${e.message}</div>`;
+        root.querySelector('#wh-msg').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
       }
     };
     root.querySelector('#wh-test').onclick = async () => {
       const { deliveries, note } = await Api.testWebhooks();
-      root.querySelector('#wh-out').innerHTML = `<div class="info-box">${note}<br/>Deliveries recorded: ${deliveries.length}</div>`;
+      root.querySelector('#wh-out').innerHTML = `<div class="info-box">${escapeHtml(note)}<br/>Deliveries recorded: ${deliveries.length}</div>`;
     };
     root.querySelectorAll('[data-p]').forEach((btn) => {
       btn.onclick = async () => {
@@ -600,7 +600,7 @@ Views.developers = async function (root) {
       };
     });
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -619,8 +619,8 @@ Views.intelligence = async function (root) {
         <div class="grid">
           ${(network.communities || []).map((c) => c && `
             <div class="card" style="margin:0;">
-              <h3>${c.name}</h3>
-              <p class="muted">Health ${c.health} · ${c.stats.members} members</p>
+              <h3>${escapeHtml(c.name)}</h3>
+              <p class="muted">Health ${escapeHtml(c.health)} · ${c.stats.members} members</p>
             </div>
           `).filter(Boolean).join('')}
         </div>
@@ -634,7 +634,7 @@ Views.intelligence = async function (root) {
       <div class="card">
         <h3>Impact &amp; SDG Module</h3>
         <p class="muted">Resilience score <strong id="resilience-score">${impact.communityResilienceScore}</strong>/100 · <span id="total-impact-records">${impact.totalRecords}</span> records logged</p>
-        <div id="sdg-badges-container">${(impact.bySdg || []).map((s) => `<span class="badge badge-matched">SDG ${s.sdg}: ${s.value}</span>`).join(' ')}</div>
+        <div id="sdg-badges-container">${(impact.bySdg || []).map((s) => `<span class="badge badge-matched">SDG ${escapeHtml(s.sdg)}: ${escapeHtml(s.value)}</span>`).join(' ')}</div>
         ${Store.isLoggedIn() ? `
           <hr class="divider" />
           <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
@@ -648,8 +648,8 @@ Views.intelligence = async function (root) {
       <div class="card">
         <h3>Research hub</h3>
         ${(research.datasets || []).map((d) => `
-          <div class="result-row"><div><strong>${d.title}</strong>
-            <p class="muted">${d.description || ''} · ${d.records ? d.records.length : 0} records ${d.open ? '· open' : ''}</p></div></div>
+          <div class="result-row"><div><strong>${escapeHtml(d.title)}</strong>
+            <p class="muted">${escapeHtml(d.description || '')} · ${d.records ? d.records.length : 0} records ${d.open ? '· open' : ''}</p></div></div>
         `).join('') || '<p class="muted">No datasets yet.</p>'}
         ${Store.isLoggedIn() ? `<button class="btn" id="pub-ds">Publish skill snapshot</button>` : ''}
       </div>
@@ -683,9 +683,9 @@ Views.intelligence = async function (root) {
       out.innerHTML = `<div class="loading-line"><span class="spinner"></span> Reasoning…</div>`;
       const data = await Api.reason({ query });
       out.innerHTML = `
-        <p class="muted">Agents: ${(data.agents || []).join(', ')}</p>
-        <p><strong>${data.recommendation.primaryAction}</strong></p>
-        <ol>${data.steps.map((s) => `<li><code>${s.name}</code></li>`).join('')}</ol>
+        <p class="muted">Agents: ${(data.agents || []).map((a) => escapeHtml(a)).join(', ')}</p>
+        <p><strong>${escapeHtml(data.recommendation.primaryAction)}</strong></p>
+        <ol>${data.steps.map((s) => `<li><code>${escapeHtml(s.name)}</code></li>`).join('')}</ol>
       `;
     };
     if (root.querySelector('#passport')) {
@@ -693,7 +693,7 @@ Views.intelligence = async function (root) {
         const p = await Api.syncPassport();
         root.querySelector('#pass-out').innerHTML = `
           <div class="info-box">Verified ${p.summary.verified}/${p.summary.skills} credentials · trust ${p.summary.trustScore}
-            <div>${p.credentials.map((c) => `<span class="badge ${c.verified ? 'badge-matched' : 'badge-skill'}">${c.skill}</span>`).join(' ')}</div>
+            <div>${p.credentials.map((c) => `<span class="badge ${c.verified ? 'badge-matched' : 'badge-skill'}">${escapeHtml(c.skill)}</span>`).join(' ')}</div>
           </div>`;
       };
     }
@@ -723,7 +723,7 @@ Views.intelligence = async function (root) {
           if (recEl) recEl.textContent = updatedImpact.totalRecords;
           const badgesEl = root.querySelector('#sdg-badges-container');
           if (badgesEl && updatedImpact.bySdg) {
-            badgesEl.innerHTML = updatedImpact.bySdg.map((s) => `<span class="badge badge-matched">SDG ${s.sdg}: ${s.value}</span>`).join(' ');
+            badgesEl.innerHTML = updatedImpact.bySdg.map((s) => `<span class="badge badge-matched">SDG ${escapeHtml(s.sdg)}: ${escapeHtml(s.value)}</span>`).join(' ');
           }
 
           // 3. Success Toast
@@ -760,11 +760,11 @@ Views.intelligence = async function (root) {
             projectCount: 1,
           },
         });
-        root.querySelector('#scen-out').innerHTML = `<div class="info-box">${scenario.results.narrative}</div>`;
+        root.querySelector('#scen-out').innerHTML = `<div class="info-box">${escapeHtml(scenario.results.narrative)}</div>`;
       };
     }
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 
@@ -785,7 +785,7 @@ Views.autonomy = async function (root) {
     root.innerHTML = `
       <div class="card">
         <h3>Autonomous Community Intelligence</h3>
-        <p class="muted">Working on <strong>${communities[0].name}</strong> · <span class="badge">rule-based agents (demo)</span></p>
+        <p class="muted">Working on <strong>${escapeHtml(communities[0].name)}</strong> · <span class="badge">rule-based agents (demo)</span></p>
         ${Store.isLoggedIn() ? `
           <button class="btn btn-primary" id="pulse">Run OS pulse (all agents)</button>
           <button class="btn" id="auto-teams">Auto-form teams</button>
@@ -803,7 +803,7 @@ Views.autonomy = async function (root) {
         <h3>Agents</h3>
         ${agents.agents.map((a) => `
           <div class="result-row">
-            <div><strong>${a.type}</strong> <span class="badge">${a.status}</span>
+            <div><strong>${escapeHtml(a.type)}</strong> <span class="badge">${escapeHtml(a.status)}</span>
               <p class="muted">Last run: ${a.lastRunAt ? new Date(a.lastRunAt).toLocaleString() : 'never'}</p>
             </div>
             ${Store.isLoggedIn() ? `<button class="btn" data-agent="${a.type}">Run</button>` : ''}
@@ -813,7 +813,7 @@ Views.autonomy = async function (root) {
       <div class="card">
         <h3>Collective memory</h3>
         ${(memory.memory || []).map((m) => `
-          <div class="msg-row"><span class="badge">${m.kind}</span><p>${m.content}</p>
+          <div class="msg-row"><span class="badge">${escapeHtml(m.kind)}</span><p>${escapeHtml(m.content)}</p>
             <p class="muted" style="font-size:12px;">${new Date(m.createdAt).toLocaleString()}</p></div>
         `).join('') || '<p class="muted">No memory yet.</p>'}
         ${Store.isLoggedIn() ? `
@@ -830,7 +830,7 @@ Views.autonomy = async function (root) {
         const out = root.querySelector('#out');
         out.innerHTML = `<div class="loading-line"><span class="spinner"></span> Running Community OS pulse…</div>`;
         const r = await Api.osPulse(cid, 'Strengthen community this week');
-        out.innerHTML = `<div class="info-box">${r.message}<ul>${r.agents.map((a) => `<li><strong>${a.type}</strong>: ${a.summary}</li>`).join('')}</ul>
+        out.innerHTML = `<div class="info-box">${escapeHtml(r.message)}<ul>${r.agents.map((a) => `<li><strong>${escapeHtml(a.type)}</strong>: ${escapeHtml(a.summary)}</li>`).join('')}</ul>
           Auto-teams formed: ${r.autoTeams.count}</div>`;
       };
       root.querySelector('#auto-teams').onclick = async () => {
@@ -841,7 +841,7 @@ Views.autonomy = async function (root) {
       root.querySelectorAll('[data-agent]').forEach((btn) => {
         btn.onclick = async () => {
           const r = await Api.runAgents(cid, { type: btn.getAttribute('data-agent') });
-          root.querySelector('#out').innerHTML = `<div class="info-box">${r.output.summary}</div>`;
+          root.querySelector('#out').innerHTML = `<div class="info-box">${escapeHtml(r.output.summary)}</div>`;
         };
       });
       root.querySelector('#brain').onclick = async () => {
@@ -849,12 +849,12 @@ Views.autonomy = async function (root) {
         if (!prompt) return;
         const r = await Api.brainstorm(cid, prompt);
         root.querySelector('#brain-out').innerHTML = r.ideas.map((i) => `
-          <div class="msg-row"><span class="badge">${i.source}</span><p>${i.text}</p></div>
+          <div class="msg-row"><span class="badge">${escapeHtml(i.source)}</span><p>${escapeHtml(i.text)}</p></div>
         `).join('');
       };
     }
   } catch (e) {
-    root.innerHTML = `<div class="error-box">${e.message}</div>`;
+    root.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }
 };
 

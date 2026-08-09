@@ -25,7 +25,14 @@ const GraphView = {
       const byType = { person: [], skill: [], community: [], organization: [] };
       nodes.forEach((n) => { (byType[n.type] || (byType[n.type] = [])).push(n); });
 
-      const ringRadius = { community: 40, person: 160, skill: 240, organization: 320 };
+      const maxPerRing = Math.max(...Object.values(byType).map((l) => l.length), 1);
+      const ringScale = Math.max(1, Math.sqrt(maxPerRing / 8));
+      const ringRadius = {
+        community: Math.min(40 * ringScale, 100),
+        person: Math.min(160 * ringScale, 230),
+        skill: Math.min(240 * ringScale, 310),
+        organization: Math.min(320 * ringScale, 380),
+      };
       const positions = {};
       Object.entries(byType).forEach(([type, list]) => {
         const r = ringRadius[type] ?? 200;
@@ -119,7 +126,7 @@ const GraphView = {
                 <strong><i data-lucide="zap" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i> Attached Skills for ${escapeXml(selectedNode.label)}:</strong>
                 <button class="btn btn-sm" id="close-graph-popup" style="padding: 2px 8px; font-size: 11px;"><i data-lucide="x" style="width: 12px; height: 12px; vertical-align: middle;"></i> Close</button>
               </div>
-              <div style="margin-top: 8px;">
+              <div style="margin-top: 8px; max-height: 220px; overflow-y: auto;">
                 ${connectedNodesList.length
                   ? connectedNodesList.map((s) => `<span class="badge badge-skill"><i data-lucide="sparkles" style="width: 12px; height: 12px; vertical-align: middle;"></i> ${escapeXml(s.label)}</span>`).join(' ')
                   : '<span class="muted">No attached skill nodes found in graph.</span>'}
@@ -132,7 +139,7 @@ const GraphView = {
                 <strong><i data-lucide="globe" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i> Members of ${escapeXml(selectedNode.label)}:</strong>
                 <button class="btn btn-sm" id="close-graph-popup" style="padding: 2px 8px; font-size: 11px;"><i data-lucide="x" style="width: 12px; height: 12px; vertical-align: middle;"></i> Close</button>
               </div>
-              <div style="margin-top: 8px;">
+              <div style="margin-top: 8px; max-height: 220px; overflow-y: auto;">
                 ${connectedNodesList.length
                   ? connectedNodesList.map((p) => `<span class="badge" style="border-color:#b088ff;color:#ffffff;"><i data-lucide="user" style="width: 12px; height: 12px; vertical-align: middle;"></i> ${escapeXml(p.label)}</span>`).join(' ')
                   : '<span class="muted">No member nodes found in graph.</span>'}

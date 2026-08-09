@@ -133,6 +133,11 @@ code, pre, .mono, .label-caps, .breadcrumb-container, .time-group-header, .searc
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+.input:focus-visible, textarea:focus-visible, select:focus-visible,
+.global-search-input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 
 /* ---------- Top Navigation ---------- */
 .topnav {
@@ -688,6 +693,7 @@ code, pre, .mono, .label-caps, .breadcrumb-container, .time-group-header, .searc
   font-size: 1.125rem;
   font-weight: 700;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .card-icon {
@@ -867,6 +873,11 @@ label {
   margin: 3px 4px 3px 0;
   background: var(--panel-hover);
   color: var(--text);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 .badge-skill {
   color: var(--secondary);
@@ -900,6 +911,13 @@ label {
   transition: 0.15s ease;
 }
 .result-row:hover { background: var(--panel-hover); }
+.result-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
 .score-pill {
   font-family: var(--font-mono);
   background: var(--primary);

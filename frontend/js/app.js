@@ -220,7 +220,7 @@ const App = {
                 searchOut += `
                   <div class="search-result-item" data-navigate="community" data-id="${c.id}">
                     <span><i data-lucide="building-2" style="width: 16px; height: 16px;"></i></span>
-                    <div><strong>${c.name}</strong><br/><span class="muted" style="font-size:11px;">${c.description || 'Community'}</span></div>
+                    <div><strong>${escapeHtml(c.name)}</strong><br/><span class="muted" style="font-size:11px;">${escapeHtml(c.description || 'Community')}</span></div>
                   </div>`;
               });
             }
@@ -229,10 +229,10 @@ const App = {
             searchOut += `<div class="search-group-title">Platform Quick Links</div>`;
             searchOut += `
               <div class="search-result-item" data-navigate="teams">
-                <span><i data-lucide="users" style="width: 16px; height: 16px;"></i></span><div><strong>AI Team Builder</strong><br/><span class="muted" style="font-size:11px;">Find candidates for "${query}"</span></div>
+                <span><i data-lucide="users" style="width: 16px; height: 16px;"></i></span><div><strong>AI Team Builder</strong><br/><span class="muted" style="font-size:11px;">Find candidates for "${escapeHtml(query)}"</span></div>
               </div>
               <div class="search-result-item" data-navigate="search">
-                <span><i data-lucide="search" style="width: 16px; height: 16px;"></i></span><div><strong>Full AI Search</strong><br/><span class="muted" style="font-size:11px;">Run query: ${query}</span></div>
+                <span><i data-lucide="search" style="width: 16px; height: 16px;"></i></span><div><strong>Full AI Search</strong><br/><span class="muted" style="font-size:11px;">Run query: ${escapeHtml(query)}</span></div>
               </div>`;
 
             searchResults.innerHTML = searchOut;
@@ -404,7 +404,7 @@ const App = {
       if (nameLabel) nameLabel.textContent = user.name || 'Account';
       if (statusTextEl) statusTextEl.textContent = user.availability || 'Available';
       if (headerEl) {
-        headerEl.innerHTML = `<strong>${user.name}</strong><br/><span class="muted" style="font-size:12px;">${user.email}</span>`;
+        headerEl.innerHTML = `<strong>${escapeHtml(user.name)}</strong><br/><span class="muted" style="font-size:12px;">${escapeHtml(user.email)}</span>`;
       }
       if (authActionEl) {
         authActionEl.innerHTML = `<button class="dropdown-item" style="color:var(--red);" id="pm-logout"><i data-lucide="log-out" style="width: 16px; height: 16px; margin-right: 8px;"></i> Log out</button>`;
@@ -471,8 +471,8 @@ const App = {
 
       listEl.innerHTML = notifications.slice(0, 5).map((n) => `
         <div class="msg-row ${n.read ? '' : 'unread'}" style="padding:8px 10px; font-size:12.5px;">
-          <strong>${n.title}</strong>
-          <p class="muted" style="margin:2px 0 0; font-size:11.5px;">${n.body || ''}</p>
+          <strong>${escapeHtml(n.title)}</strong>
+          <p class="muted" style="margin:2px 0 0; font-size:11.5px;">${escapeHtml(n.body || '')}</p>
         </div>
       `).join('');
     } catch {
@@ -545,7 +545,7 @@ const App = {
     const toast = document.createElement('div');
     toast.className = 'toast-banner';
     toast.innerHTML = `
-      <span>${message}</span>
+      <span>${escapeHtml(message)}</span>
       ${undoCallback ? `<button class="toast-undo-btn" id="toast-undo">Undo</button>` : ''}
     `;
 
@@ -684,7 +684,7 @@ const App = {
             this.render();
           }
         } catch (e) {
-          msgBox.innerHTML = `<div class="error-box">${e.message || 'Failed to log impact.'}</div>`;
+          msgBox.innerHTML = `<div class="error-box">${escapeHtml(e.message || 'Failed to log impact.')}</div>`;
           submitBtn.disabled = false;
           submitBtn.innerHTML = `Log Impact`;
         }
@@ -693,18 +693,70 @@ const App = {
   },
 
   async render() {
+    // Route transition locking: if a newer navigation starts while this one
+    // is still loading, the stale render aborts so views never clobber each
+    // other (slow-network double-clicks).
+    const seq = (this._renderSeq = (this._renderSeq || 0) + 1);
     const { route, params } = this.parseHash();
     this.updateBreadcrumb(route, params);
     this.refreshNav();
     const root = document.getElementById('view');
-    await this.routes[route](root, params);
-    window.lucide?.createIcons();
+    if (!root) return;
+    try {
+      await this.routes[route](root, params);
+    } catch (e) {
+      // Zero blank screens: any view failure renders a clean error box.
+      if (seq === this._renderSeq) {
+        root.innerHTML = `
+          <div class="error-box">
+            Something went wrong while loading this page.
+            <p class="muted" style="margin:8px 0 0;">${escapeHtml(e && e.message ? e.message : 'Unknown error')}</p>
+          </div>
+          <button class="btn" onclick="window.location.hash='#home'">Back to home</button>`;
+      }
+    } finally {
+      if (seq === this._renderSeq) {
+        window.lucide?.createIcons();
+      }
+    }
   },
 
   async init() {
     this.initTopNav();
+
+    // Multi-tab session sync: when another tab logs in/out, mirror it here.
+    // (storage events only fire in OTHER tabs, not the one that changed.)
+    window.addEventListener('storage', async (e) => {
+      if (e.key !== 'skillmesh_token') return;
+      if (!e.newValue) {
+        // Logged out in another tab → drop to guest mode immediately.
+        Store.clearToken();
+        Store.setUser(null);
+        this.refreshNav();
+        if (!window.location.hash.startsWith('#login')) {
+          this.showToast('You were logged out in another tab.');
+          this.navigate('home');
+        }
+      } else if (e.oldValue && e.oldValue !== e.newValue) {
+        // Session refreshed in another tab → re-fetch the user.
+        try {
+          const { user } = await Api.me();
+          Store.setUser(user);
+          this.refreshNav();
+        } catch { /* token invalid elsewhere too */ }
+      }
+    });
+
+    // Global crash safety: never let a stray error blank the app.
+    window.addEventListener('error', (e) => {
+      console.error('[SkillMesh] window error:', e.error || e.message);
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error('[SkillMesh] unhandled rejection:', e.reason);
+    });
+
     window.addEventListener('hashchange', () => this.render());
-    
+
     // Sidebar toggle logic (desktop collapse vs mobile drawer)
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
@@ -725,6 +777,15 @@ const App = {
       if (sidebar) sidebar.classList.remove('open');
       overlay.classList.remove('open');
     };
+
+    // Resizing from mobile to desktop while the drawer is open must never
+    // leave the drawer stuck as an overlay.
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 992 && sidebar && sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+      }
+    });
 
     // Close mobile drawer on navigation
     window.addEventListener('hashchange', () => {
