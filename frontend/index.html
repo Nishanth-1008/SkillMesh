@@ -82,7 +82,10 @@
             <div class="dropdown-divider"></div>
             <button class="dropdown-item" id="pm-dashboard"><i data-lucide="user" style="width: 16px; height: 16px; margin-right: 8px;"></i> My Profile</button>
             <button class="dropdown-item" id="pm-messages"><i data-lucide="inbox" style="width: 16px; height: 16px; margin-right: 8px;"></i> Inbox & Alerts</button>
-            <button class="dropdown-item" id="pm-status-toggle"><i data-lucide="circle-dot" style="width: 16px; height: 16px; margin-right: 8px;"></i> Status: <span id="user-status-text">Available</span></button>
+            <button class="dropdown-item status-toggle-item" id="pm-status-toggle" title="Click to cycle availability">
+              <i data-lucide="circle-check" class="status-icon status-available" id="user-status-icon"></i>
+              <span class="status-toggle-label">Status: <span id="user-status-text" class="status-pill status-available">Available</span></span>
+            </button>
             <div class="dropdown-divider"></div>
             <div id="pm-auth-action"></div>
           </div>

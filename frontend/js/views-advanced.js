@@ -130,8 +130,10 @@ Views.events = async function (root) {
         <h3>${escapeHtml(e.title)}</h3>
         <p class="muted">${escapeHtml(e.description || '')}</p>
         <p class="muted">${e.startAt ? new Date(e.startAt).toLocaleString() : 'TBD'} · ${e.registered || 0} registered · ${escapeHtml(e.status)}</p>
-        <button class="btn" data-view="${e.id}">Open</button>
-        ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-reg="${e.id}">Register</button>` : ''}
+        <div class="card-actions">
+          <button class="btn" data-view="${e.id}">Open</button>
+          ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-reg="${e.id}">Register</button>` : ''}
+        </div>
       </div>
     `).join('') : '<p class="muted">No events found in this category.</p>';
 

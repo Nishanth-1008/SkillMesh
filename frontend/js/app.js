@@ -335,13 +335,35 @@ const App = {
         profileDropdown.classList.add('hidden');
         this.navigate(Store.isLoggedIn() ? 'messages' : 'login');
       };
-      document.getElementById('pm-status-toggle').onclick = () => {
+      document.getElementById('pm-status-toggle').onclick = async (e) => {
+        e.stopPropagation();
         const user = Store.getUser();
-        if (user) {
-          user.availability = user.availability === 'available' ? 'busy' : 'available';
-          Store.setUser(user);
+        if (!user || !Store.isLoggedIn()) {
+          this.navigate('login');
+          return;
+        }
+        const next = nextAvailability(user.availability);
+        const toggleBtn = document.getElementById('pm-status-toggle');
+        if (toggleBtn) toggleBtn.disabled = true;
+        try {
+          const { profile } = await Api.updateMyProfile({ availability: next });
+          const updated = {
+            ...user,
+            availability: (profile && profile.availability) || next,
+          };
+          Store.setUser(updated);
           this.updateTopNavUser();
-          this.showToast(`Status updated to ${user.availability}`);
+          this.showToast(`Status set to ${availabilityMeta(updated.availability).label}`);
+          // Refresh open profile/dashboard so the card reflects the new status
+          const { route } = this.parseHash();
+          if (route === 'dashboard' || route === 'profile') {
+            this.render();
+          }
+        } catch (err) {
+          this.showToast(err.message || 'Could not update status');
+        } finally {
+          if (toggleBtn) toggleBtn.disabled = false;
+          window.lucide?.createIcons();
         }
       };
     }
@@ -402,7 +424,16 @@ const App = {
     if (Store.isLoggedIn() && user) {
       if (avatarEl) avatarEl.textContent = (user.name || '?').charAt(0).toUpperCase();
       if (nameLabel) nameLabel.textContent = user.name || 'Account';
-      if (statusTextEl) statusTextEl.textContent = user.availability || 'Available';
+      const avail = normalizeAvailability(user.availability);
+      const meta = availabilityMeta(avail);
+      if (statusTextEl) {
+        statusTextEl.textContent = meta.label;
+        statusTextEl.className = `status-pill ${meta.className}`;
+      }
+      const statusIconEl = document.getElementById('user-status-icon');
+      if (statusIconEl) {
+        statusIconEl.outerHTML = `<i data-lucide="${meta.icon}" class="status-icon ${meta.className}" id="user-status-icon"></i>`;
+      }
       if (headerEl) {
         headerEl.innerHTML = `<strong>${escapeHtml(user.name)}</strong><br/><span class="muted" style="font-size:12px;">${escapeHtml(user.email)}</span>`;
       }
@@ -415,6 +446,7 @@ const App = {
           this.navigate('home');
         };
       }
+      window.lucide?.createIcons();
     } else {
       if (avatarEl) avatarEl.innerHTML = '<i data-lucide="user" style="width: 14px; height: 14px;"></i>';
       if (nameLabel) nameLabel.textContent = 'Guest';

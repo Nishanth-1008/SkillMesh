@@ -154,7 +154,10 @@ function renderProfile(root, profile, editable) {
       <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
         <div>
           <h3 style="margin-bottom:4px;"><span class="avatar-chip">${escapeHtml((profile.name || '?').charAt(0).toUpperCase())}</span>${escapeHtml(profile.name)}</h3>
-          <p class="muted" style="margin:0;"><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${escapeHtml(profile.location || 'No location set')} · ${profile.availability === 'available' ? '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--green); color: var(--green); display: inline-block; vertical-align: middle;"></i>' : '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--amber); color: var(--amber); display: inline-block; vertical-align: middle;"></i>'} ${escapeHtml(profile.availability || 'unknown')}</p>
+          <p class="muted" style="margin:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${escapeHtml(profile.location || 'No location set')}</span>
+            ${availabilityBadgeHtml(profile.availability)}
+          </p>
         </div>
         ${editable ? `
         <div style="display:flex; gap:8px; align-items:center;">
@@ -221,8 +224,9 @@ function renderProfile(root, profile, editable) {
           <input class="input" id="edit-location" value="${escapeAttr(profile.location || '')}" placeholder="e.g. Greenwood Sector 4" />
           <label class="muted">Availability</label>
           <select class="input" id="edit-availability">
-            <option value="available" ${profile.availability === 'available' ? 'selected' : ''}>available</option>
-            <option value="busy" ${profile.availability === 'busy' ? 'selected' : ''}>busy</option>
+            <option value="available" ${normalizeAvailability(profile.availability) === 'available' ? 'selected' : ''}>Available</option>
+            <option value="busy" ${normalizeAvailability(profile.availability) === 'busy' ? 'selected' : ''}>Busy</option>
+            <option value="away" ${normalizeAvailability(profile.availability) === 'away' ? 'selected' : ''}>Away</option>
           </select>
           <label class="muted">Bio</label>
           <textarea class="input" id="edit-bio" rows="2" placeholder="Short bio">${escapeHtml(profile.bio || '')}</textarea>
@@ -287,8 +291,16 @@ function renderProfile(root, profile, editable) {
             saveBtn.innerHTML = `<span class="spinner"></span> Saving…`;
 
             try {
-              const { user } = await Api.updateMyProfile({ name, location, availability, bio, interests });
-              Store.setUser(user);
+              const { profile: updated } = await Api.updateMyProfile({ name, location, availability, bio, interests });
+              const current = Store.getUser() || {};
+              Store.setUser({
+                ...current,
+                name: updated.name,
+                location: updated.location,
+                availability: updated.availability,
+                bio: updated.bio,
+                interests: updated.interests,
+              });
               modalContainer.classList.add('hidden');
               App.showToast('Profile updated successfully!');
               App.refreshNav();
@@ -340,6 +352,8 @@ function renderProfile(root, profile, editable) {
       App.navigate('dashboard');
     };
   });
+
+  window.lucide?.createIcons();
 }
 
 async function handleJoinCommunity(communityId, communityName, onSuccess) {
@@ -436,8 +450,10 @@ Views.communities = async function (root) {
         <h3>${escapeHtml(c.name)}</h3>
         <p class="muted">${escapeHtml(c.description || 'No description.')}</p>
         <p class="muted">${c.memberCount} member${c.memberCount === 1 ? '' : 's'}</p>
-        <button class="btn" data-view="${c.id}">View</button>
-        ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-join="${c.id}" data-name="${escapeAttr(c.name)}">Join</button>` : ''}
+        <div class="card-actions">
+          <button class="btn" data-view="${c.id}">View</button>
+          ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-join="${c.id}" data-name="${escapeAttr(c.name)}">Join</button>` : ''}
+        </div>
       </div>
     `).join('');
     list.querySelectorAll('[data-view]').forEach((btn) => {
@@ -483,11 +499,13 @@ Views.community = async function (root, params) {
         <p class="muted">${escapeHtml(community.description || '')}</p>
         <p class="muted">${community.memberCount} members</p>
         ${Store.isLoggedIn() ? `
-          ${!myMembership ? `<button class="btn btn-primary" id="join">Join</button>` : ''}
-          ${myMembership ? `<button class="btn btn-danger" id="leave">Leave Community</button>` : ''}
-          <button class="btn" id="search-here">AI search here</button>
-          <button class="btn" id="team-here">Build team here</button>
-          <button class="btn" id="analytics-here">Community intel</button>
+          <div class="card-actions">
+            ${!myMembership ? `<button class="btn btn-primary" id="join">Join</button>` : ''}
+            ${myMembership ? `<button class="btn btn-danger" id="leave">Leave Community</button>` : ''}
+            <button class="btn" id="search-here">AI search here</button>
+            <button class="btn" id="team-here">Build team here</button>
+            <button class="btn" id="analytics-here">Community intel</button>
+          </div>
         ` : ''}
       </div>
       <div class="card">
@@ -609,7 +627,11 @@ function renderSearchResults(container, data) {
             <div class="result-rank">${i + 1}</div>
             <div>
               <strong style="cursor:pointer;" data-profile="${r.user.id}">${escapeHtml(r.user.name)}</strong>
-              <p class="muted" style="margin:4px 0;"><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${escapeHtml(r.user.location || 'Location unknown')} · ${r.user.availability === 'available' ? '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--green); color: var(--green); display: inline-block; vertical-align: middle;"></i>' : '<i data-lucide="circle" style="width: 10px; height: 10px; fill: var(--amber); color: var(--amber); display: inline-block; vertical-align: middle;"></i>'} ${escapeHtml(r.user.availability)}${r.trustScore != null ? ` · trust ${r.trustScore}` : ''}</p>
+              <p class="muted" style="margin:4px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${escapeHtml(r.user.location || 'Location unknown')}</span>
+                ${availabilityBadgeHtml(r.user.availability)}
+                ${r.trustScore != null ? `<span class="muted">· trust ${r.trustScore}</span>` : ''}
+              </p>
               <div>${r.skills.map((s) => `<span class="badge ${(r.matchedSkills || []).includes(s) ? 'badge-matched' : 'badge-skill'}">${escapeHtml(s)}</span>`).join(' ')}</div>
             </div>
           </div>
@@ -950,8 +972,10 @@ Views.opportunities = async function (root) {
         <p class="muted">${escapeHtml(o.description || '')}</p>
         <div>${(o.skillsNeeded || []).map((s) => `<span class="badge badge-skill">${escapeHtml(s)}</span>`).join(' ')}</div>
         <p class="muted">${o.applicantCount || 0} applicants${o.matchCount ? ` · ${o.matchCount} skill match` : ''}</p>
-        <button class="btn" data-view="${o.id}">View</button>
-        ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-apply="${o.id}">Apply</button>` : ''}
+        <div class="card-actions">
+          <button class="btn" data-view="${o.id}">View</button>
+          ${Store.isLoggedIn() ? `<button class="btn btn-primary" data-apply="${o.id}">Apply</button>` : ''}
+        </div>
       </div>
     `).join('');
     list.querySelectorAll('[data-view]').forEach((btn) => {
@@ -1146,7 +1170,7 @@ Views.messages = async function (root) {
 
     // Default tab state & active filters
     let currentTab = 'primary'; // 'primary', 'updates', 'social'
-    let currentFilter = 'all'; // 'all', 'unread', 'starred'
+    let currentFilter = 'all'; // 'all', 'unread', 'read'
     let searchQuery = '';
     let selectedItemIds = new Set();
 
@@ -1154,11 +1178,11 @@ Views.messages = async function (root) {
       // Filter by active category tab
       let items = allInboxItems.filter((item) => item.category === currentTab);
 
-      // Filter by quick chip (All, Unread, Starred)
+      // Filter by quick chip (All, Unread, Read)
       if (currentFilter === 'unread') {
         items = items.filter((item) => !item.read);
-      } else if (currentFilter === 'starred') {
-        items = items.filter((item) => item.starred);
+      } else if (currentFilter === 'read') {
+        items = items.filter((item) => item.read);
       }
 
       // Filter by keyword search query
@@ -1219,10 +1243,10 @@ Views.messages = async function (root) {
 
         <!-- 2. Quick Actions & Filtering Bar -->
         <div class="inbox-filter-bar">
-          <div class="filter-chips">
-            <button class="filter-chip ${currentFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>
-            <button class="filter-chip ${currentFilter === 'unread' ? 'active' : ''}" data-filter="unread">Unread</button>
-            <button class="filter-chip ${currentFilter === 'starred' ? 'active' : ''}" data-filter="starred"><i data-lucide="star" style="width: 18px; height: 18px; vertical-align: middle;"></i> Starred</button>
+          <div class="filter-chips" role="tablist" aria-label="Message status filters">
+            <button type="button" class="filter-chip ${currentFilter === 'all' ? 'active' : ''}" data-filter="all" role="tab" aria-selected="${currentFilter === 'all'}">All</button>
+            <button type="button" class="filter-chip ${currentFilter === 'unread' ? 'active' : ''}" data-filter="unread" role="tab" aria-selected="${currentFilter === 'unread'}">Unread</button>
+            <button type="button" class="filter-chip ${currentFilter === 'read' ? 'active' : ''}" data-filter="read" role="tab" aria-selected="${currentFilter === 'read'}">Read</button>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
             <input type="text" class="input inbox-search-input" id="inbox-search" placeholder="Search messages..." value="${escapeAttr(searchQuery)}" />
@@ -1414,6 +1438,8 @@ Views.messages = async function (root) {
           }
         };
       }
+
+      window.lucide?.createIcons();
     };
 
     renderInbox();
