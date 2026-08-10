@@ -151,12 +151,16 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 ### Page 8: AI Natural Language Search (`#search`)
 * **URL**: `http://localhost:8080/#search`
-* **Purpose**: Heuristic NLP matching for emergency aid, skills, and collaborators.
+* **Purpose**: Heuristic NLP + LLM (when configured) matching for emergency aid, skills, and collaborators, with explainable results and semantic ("magic") search.
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
 | Search Form | Query Input (`#query`) | Type `need someone who knows first aid and plumbing` | Search string entered. |
-| Action | `Search` (`#run`) | Click button | Calls GET `/api/search?q=...`, displays ranked results in `#results` with match scores, matched skills, and clickable member names. |
+| Search Form | `Semantic (magic search)` (`#magic`) | Check the box | Switches the call to POST `/api/search/semantic` (embedding ranking). |
+| Action | `Search` (`#run`) | Click button | Calls POST `/api/search`, displays ranked results in `#results` with match scores, matched skills, and clickable member names. |
+| Explainability | `Why this match?` (`details.explain`) | Expand on any result | Shows human-readable reason lines (matched skills, trust score, availability, coverage). |
+| Feedback | `Good match` / `Poor match` buttons | Click on a result | POSTs `/api/recommendations/feedback` (upsert) and highlights the chosen thumb. |
+| Semantic Results | People / Opportunities / Skills / Projects cards | Run magic search (e.g. `mentor for a school STEM robotics club`) | Ranks by cosine similarity (%), shows `low relevance` tags, engine badge (`memory cosine` or `pgvector`). |
 | Results | Person names / profile links | Click a result | Navigates to `#profile?id=<ID>`. |
 
 ---
@@ -170,6 +174,8 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 | Setup Form | Goal Input (`#goal`) | Type `Build civic emergency alerting app` | Goal string entered. |
 | Setup Form | `#create-project` checkbox | Check (logged in) | Also creates a project & invites the built team. |
 | Action | `Build team` (`#run`) | Click button | Calls POST `/api/teams/build`, displays recommended team with skill coverage and success prediction in `#results`. |
+| Explainability | `Why this match?` on each member | Expand | Shows each member's coverage, open-need contribution, trust score, and collaboration reasons. |
+| Feedback | `Good match` / `Poor match` on members | Click | Records feedback; future team builders shift scores per viewer. |
 | Team Results | Member names | Click a member | Navigates to member profile. |
 
 ---
@@ -197,11 +203,13 @@ These elements are persistent across all views in the header (`.topnav`) and sid
 
 ### Page 11: Personalized Recommendations (`#recommendations`)
 * **URL**: `http://localhost:8080/#recommendations`
-* **Purpose**: Algorithmic suggestions for mentors, collaborators, and nearby people.
+* **Purpose**: Algorithmic suggestions for mentors, collaborators, and nearby people, with explainable reasons and a feedback loop that tunes rankings.
 
 | Section | Button / Element | Test Input / Action | Expected Result |
 |---|---|---|---|
 | Category Cards | Recommendation rows in `#recs` | Inspect | Mentors, volunteers, similar people, and nearby contributors with match reasons. |
+| Explainability | `Why this match?` on each recommendation | Expand | Shows matched/teachable skills, trust score, endorsements, availability, volunteer history. |
+| Feedback | `Good match` / `Poor match` buttons | Click | POSTs `/api/recommendations/feedback`; up +8 / down −14 (capped ±20) shifts future ranking for this viewer. |
 | Person Rows | Clickable member names | Click | Navigates to recommended user profile. |
 
 ---

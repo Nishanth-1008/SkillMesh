@@ -4,6 +4,9 @@ const crypto = require('crypto');
 const { Router } = require('../utils/router');
 const { getState, save } = require('../db');
 const { requireAuth } = require('../middleware/requireAuth');
+const { hasProjectRole } = require('../middleware/rbac');
+const { validate } = require('../middleware/validate');
+const { messageCreate } = require('../validation/schemas');
 const { notify, logActivity } = require('../services/notify');
 
 const router = new Router();
@@ -40,14 +43,9 @@ router.get('/inbox', requireAuth, (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/', requireAuth, (req, res, next) => {
+router.post('/', requireAuth, validate(messageCreate), (req, res, next) => {
   try {
     const { toUserId, projectId, body, announcement } = req.body;
-    if (!body || !body.trim()) {
-      const err = new Error('body is required');
-      err.status = 400;
-      throw err;
-    }
     if (!toUserId && !projectId) {
       const err = new Error('Provide toUserId (DM) or projectId (team discussion)');
       err.status = 400;
@@ -70,7 +68,7 @@ router.post('/', requireAuth, (req, res, next) => {
         err.status = 403;
         throw err;
       }
-      if (announcement && !['owner', 'lead'].includes(member.role)) {
+      if (announcement && !hasProjectRole(state, req.user.id, projectId, ['owner', 'lead'])) {
         const err = new Error('Only owners/leads can post announcements');
         err.status = 403;
         throw err;

@@ -153,7 +153,14 @@ router.get('/emergencies', optionalAuth, (req, res, next) => {
     let list = state.emergencies;
     if (req.query.communityId) list = list.filter((e) => e.communityId === req.query.communityId);
     if (req.query.status) list = list.filter((e) => e.status === req.query.status);
-    res.json({ emergencies: list });
+    res.json({
+      emergencies: list.map((e) => ({
+        ...e,
+        myResponse: req.user
+          ? state.emergencyResponses.some((r) => r.emergencyId === e.id && r.userId === req.user.id)
+          : false,
+      })),
+    });
   } catch (e) { next(e); }
 });
 

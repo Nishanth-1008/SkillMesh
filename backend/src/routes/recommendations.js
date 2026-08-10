@@ -1,9 +1,12 @@
 // Smart Recommendations API (Phase 2).
 
+const crypto = require('crypto');
 const { Router } = require('../utils/router');
-const { getState } = require('../db');
+const { getState, save } = require('../db');
 const { requireAuth, optionalAuth } = require('../middleware/requireAuth');
-const { extractSkills } = require('../nlp/skillExtractor');
+const { validate } = require('../middleware/validate');
+const { feedbackCreate } = require('../validation/schemas');
+const { understandQuery } = require('../services/llm');
 const {
   recommendMentors,
   recommendVolunteers,
@@ -24,6 +27,7 @@ router.get('/', optionalAuth, (req, res, next) => {
       : [];
     const opts = {
       userId: req.user ? req.user.id : req.query.userId,
+      viewerId: req.user ? req.user.id : undefined,
       communityId: req.query.communityId,
       skills,
       skill: req.query.skill,
@@ -39,6 +43,7 @@ router.get('/mentors', optionalAuth, (req, res, next) => {
     res.json({
       mentors: recommendMentors(state, {
         userId: req.user ? req.user.id : req.query.userId,
+        viewerId: req.user ? req.user.id : undefined,
         communityId: req.query.communityId,
       }),
     });
@@ -54,6 +59,7 @@ router.get('/volunteers', optionalAuth, (req, res, next) => {
     res.json({
       volunteers: recommendVolunteers(state, {
         skills,
+        viewerId: req.user ? req.user.id : undefined,
         communityId: req.query.communityId,
       }),
     });
@@ -69,6 +75,7 @@ router.get('/experts', optionalAuth, (req, res, next) => {
     res.json({
       experts: recommendExperts(state, {
         skills,
+        viewerId: req.user ? req.user.id : undefined,
         communityId: req.query.communityId,
       }),
     });
@@ -81,6 +88,7 @@ router.get('/similar', requireAuth, (req, res, next) => {
     res.json({
       similar: similarPeople(state, {
         userId: req.user.id,
+        viewerId: req.user.id,
         communityId: req.query.communityId,
       }),
     });
@@ -93,6 +101,7 @@ router.get('/nearby', requireAuth, (req, res, next) => {
     res.json({
       nearby: nearbyContributors(state, {
         userId: req.user.id,
+        viewerId: req.user.id,
         communityId: req.query.communityId,
       }),
     });
@@ -112,7 +121,7 @@ router.get('/related-skills', (req, res, next) => {
 });
 
 // Natural-language recommendation shortcut
-router.post('/ask', optionalAuth, (req, res, next) => {
+router.post('/ask', optionalAuth, async (req, res, next) => {
   try {
     const { query, communityId } = req.body;
     if (!query) {
@@ -121,9 +130,10 @@ router.post('/ask', optionalAuth, (req, res, next) => {
       throw err;
     }
     const state = getState();
-    const understanding = extractSkills(query);
+    const understanding = await understandQuery(query);
     const opts = {
       userId: req.user ? req.user.id : undefined,
+      viewerId: req.user ? req.user.id : undefined,
       communityId,
       skills: understanding.skills,
       limit: 8,
@@ -144,6 +154,51 @@ router.post('/ask', optionalAuth, (req, res, next) => {
       recommendations: primary,
       all: recommendAll(state, opts),
     });
+  } catch (e) { next(e); }
+});
+
+// Record feedback on a recommendation (up/down). Upsert per (user, target, context)
+router.post('/feedback', requireAuth, validate(feedbackCreate), (req, res, next) => {
+  try {
+    const { targetType, targetId, rating, context } = req.body;
+    const state = getState();
+
+    const existing = state.feedback.find(
+      (f) =>
+        f.userId === req.user.id &&
+        f.targetType === targetType &&
+        f.targetId === targetId &&
+        f.context === (context || '')
+    );
+
+    if (existing) {
+      existing.rating = rating;
+    } else {
+      state.feedback.push({
+        id: crypto.randomUUID(),
+        userId: req.user.id,
+        targetType,
+        targetId,
+        rating,
+        context: context || '',
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    save();
+    res.json({ ok: true, rating, targetType, targetId });
+  } catch (e) { next(e); }
+});
+
+// The viewer's own feedback (optionally filtered by targetType)
+router.get('/feedback', requireAuth, (req, res, next) => {
+  try {
+    const state = getState();
+    let list = state.feedback.filter((f) => f.userId === req.user.id);
+    if (req.query.targetType) {
+      list = list.filter((f) => f.targetType === req.query.targetType);
+    }
+    res.json({ feedback: list });
   } catch (e) { next(e); }
 });
 

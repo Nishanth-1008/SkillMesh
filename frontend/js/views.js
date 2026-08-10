@@ -52,13 +52,27 @@ Views.login = function (root) {
       <label>Email</label>
       <input class="input" id="email" type="email" placeholder="raj@example.com" />
       <label>Password</label>
-      <input class="input" id="password" type="password" placeholder="password123" />
+      <div class="password-wrap">
+        <input class="input" id="password" type="password" placeholder="password123" />
+        <button type="button" class="pw-toggle" id="pw-toggle" title="Show password" aria-label="Show password"><i data-lucide="eye"></i></button>
+      </div>
       <button class="btn btn-primary" id="submit" style="width:100%;">Log in</button>
       <p class="muted" style="margin-top:14px;">No account? <a href="#" id="go-register" style="color:var(--cyan);">Register</a></p>
       <p class="muted">Demo: raj@example.com / password123 (also sneha, arjun, priya, kabir @example.com)</p>
     </div>
   `;
   root.querySelector('#go-register').onclick = (e) => { e.preventDefault(); App.navigate('register'); };
+  root.querySelector('#pw-toggle').onclick = (e) => {
+    const input = root.querySelector('#password');
+    const btn = e.currentTarget;
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.innerHTML = show ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
+    btn.title = show ? 'Hide password' : 'Show password';
+    btn.setAttribute('aria-label', btn.title);
+    input.focus();
+    window.lucide?.createIcons();
+  };
   root.querySelector('#submit').onclick = async () => {
     const email = root.querySelector('#email').value.trim();
     const password = root.querySelector('#password').value;
@@ -92,7 +106,10 @@ Views.register = function (root) {
       <label>Email</label>
       <input class="input" id="email" type="email" placeholder="you@example.com" autocomplete="email" />
       <label>Password</label>
-      <input class="input" id="password" type="password" placeholder="8+ characters with a number &amp; symbol" autocomplete="new-password" />
+      <div class="password-wrap">
+        <input class="input" id="password" type="password" placeholder="8+ characters with a number &amp; symbol" autocomplete="new-password" />
+        <button type="button" class="pw-toggle" id="pw-toggle" title="Show password" aria-label="Show password"><i data-lucide="eye"></i></button>
+      </div>
       <div class="pwd-rules" id="pwd-rules" hidden>
         <div class="pwd-rule" data-rule="length"><span class="pwd-rule-icon">○</span> At least 8 characters</div>
         <div class="pwd-rule" data-rule="upper"><span class="pwd-rule-icon">○</span> One uppercase letter</div>
@@ -109,6 +126,17 @@ Views.register = function (root) {
     </div>
   `;
   root.querySelector('#go-login').onclick = (e) => { e.preventDefault(); App.navigate('login'); };
+  root.querySelector('#pw-toggle').onclick = (e) => {
+    const input = root.querySelector('#password');
+    const btn = e.currentTarget;
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.innerHTML = show ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
+    btn.title = show ? 'Hide password' : 'Show password';
+    btn.setAttribute('aria-label', btn.title);
+    input.focus();
+    window.lucide?.createIcons();
+  };
 
   const pwd = root.querySelector('#password');
   const rulesEl = root.querySelector('#pwd-rules');
@@ -612,16 +640,25 @@ Views.search = function (root, params) {
       <p class="muted">Try: "I need someone to teach robotics", "emergency electrician needed now", or "build me a hackathon team".</p>
       ${!Store.isLoggedIn() ? '<div class="error-box">Log in to run a search.</div>' : ''}
       <textarea class="input" id="query" rows="2" placeholder="I need someone to teach robotics"></textarea>
-      <button class="btn btn-primary" id="run" ${!Store.isLoggedIn() ? 'disabled' : ''}>Search</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <label class="muted" title="Semantic search ranks by meaning, not just keywords — e.g. 'school STEM club' finds robotics/teaching mentors."><input type="checkbox" id="magic" /> Semantic (magic search)</label>
+        <button class="btn btn-primary" id="run" ${!Store.isLoggedIn() ? 'disabled' : ''}>Search</button>
+      </div>
     </div>
     <div id="results"></div>
   `;
-  const runSearch = async (query) => {
+  const runSearch = async (query, magic) => {
     const results = root.querySelector('#results');
     results.innerHTML = `<div class="loading-line"><span class="spinner"></span> Reasoning over the community graph…</div>`;
     try {
-      const data = await Api.search({ query, communityId: params && params.communityId });
-      renderSearchResults(results, data);
+      const payload = { query, communityId: params && params.communityId };
+      if (magic) {
+        const data = await Api.semanticSearch(payload);
+        renderSemanticResults(results, data);
+      } else {
+        const data = await Api.search(payload);
+        renderSearchResults(results, data);
+      }
     } catch (e) {
       results.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
     }
@@ -629,14 +666,135 @@ Views.search = function (root, params) {
   root.querySelector('#run').onclick = () => {
     const query = root.querySelector('#query').value.trim();
     if (!query) return;
-    runSearch(query);
+    runSearch(query, root.querySelector('#magic').checked);
   };
   const prefilled = params && params.q ? String(params.q) : '';
   if (prefilled) {
     root.querySelector('#query').value = prefilled;
-    if (Store.isLoggedIn()) runSearch(prefilled);
+    if (Store.isLoggedIn()) runSearch(prefilled, false);
   }
 };
+
+function renderSemanticResults(container, data) {
+  const { understanding, people, opportunities, skills, projects } = data;
+  const badge = data.pgVectorAvailable
+    ? '<span class="badge badge-matched" title="Postgres pgvector">pgvector</span>'
+    : '<span class="badge">memory cosine</span>';
+  container.innerHTML = `
+    <div class="card">
+      <p class="muted">Intent: <strong>${escapeHtml(understanding.intent.replace('_', ' '))}</strong>
+        ${badge}
+        <span class="muted">· embeddings (${data.embeddingDim}-dim) · source ${escapeHtml(understanding.source || 'heuristic')}</span>
+      </p>
+    </div>
+    <div class="card">
+      <h3>People · ${people.length}</h3>
+      ${!people.length ? '<div class="info-box">No semantic matches yet.</div>' : people.map((r, i) => `
+        <div class="result-row">
+          <div class="result-main">
+            <div class="result-rank">${i + 1}</div>
+            <div>
+              <strong style="cursor:pointer;" data-profile="${r.user.id}">${escapeHtml(r.user.name)}</strong>
+              <p class="muted" style="margin:4px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${escapeHtml(r.user.location || 'Location unknown')}</span>
+                ${availabilityBadgeHtml(r.user.availability)}
+                <span class="muted">· trust ${r.trustScore}</span>
+                ${r.relevant ? '' : '<span class="muted">· low relevance</span>'}
+              </p>
+              ${explainHtml(r, 'search')}
+            </div>
+          </div>
+          <div class="score-pill">${r.similarity}%</div>
+        </div>
+      `).join('')}
+    </div>
+    ${opportunities.length ? `
+    <div class="card">
+      <h3>Opportunities · ${opportunities.length}</h3>
+      ${opportunities.map((o) => `
+        <div class="result-row">
+          <div class="result-main">
+            <div>
+              <strong style="cursor:pointer;" data-opportunity="${o.opportunity.id}">${escapeHtml(o.opportunity.title)}</strong>
+              <div>${(o.opportunity.skillsNeeded || []).map((s) => `<span class="badge badge-skill">${escapeHtml(s)}</span>`).join(' ')}</div>
+            </div>
+          </div>
+          <div class="score-pill">${o.similarity}%</div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+    ${skills.length ? `
+    <div class="card">
+      <h3>Related skills</h3>
+      ${skills.map((s) => `<span class="badge badge-matched">${escapeHtml(s.skill)} <span class="muted">(${s.similarity}%)</span></span>`).join(' ')}
+    </div>` : ''}
+    ${projects.length ? `
+    <div class="card">
+      <h3>Projects · ${projects.length}</h3>
+      ${projects.map((p) => `
+        <div class="result-row">
+          <div class="result-main">
+            <strong style="cursor:pointer;" data-project="${p.project.id}">${escapeHtml(p.project.title)}</strong>
+          </div>
+          <div class="score-pill">${p.similarity}%</div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+  `;
+  container.querySelectorAll('[data-profile]').forEach((el) => {
+    el.onclick = () => App.navigate('profile', { id: el.getAttribute('data-profile') });
+  });
+  container.querySelectorAll('[data-opportunity]').forEach((el) => {
+    el.onclick = () => App.navigate('opportunity', { id: el.getAttribute('data-opportunity') });
+  });
+  container.querySelectorAll('[data-project]').forEach((el) => {
+    el.onclick = () => App.navigate('project', { id: el.getAttribute('data-project') });
+  });
+  bindFeedback(container, 'search');
+}
+
+// ---------- Phase 2: explainability & feedback controls ----------
+function explainHtml(r) {
+  const lines = Array.isArray(r.explain) && r.explain.length ? r.explain : [];
+  const details = lines.length
+    ? `
+      <details class="explain">
+        <summary>Why this match?</summary>
+        <ul>${lines.map((l) => `<li>${escapeHtml(l)}</li>`).join('')}</ul>
+      </details>`
+    : '';
+  const feedback = Store.isLoggedIn()
+    ? `
+      <div class="feedback-row" data-target="${r.user.id}">
+        <button class="btn btn-sm" data-thumb="up">Good match</button>
+        <button class="btn btn-sm" data-thumb="down">Poor match</button>
+        <span class="muted feedback-msg"></span>
+      </div>`
+    : '';
+  return details + feedback;
+}
+
+function bindFeedback(rootEl, context) {
+  rootEl.querySelectorAll('[data-thumb]').forEach((btn) => {
+    btn.onclick = async () => {
+      const row = btn.closest('[data-target]');
+      if (!row) return;
+      const targetId = row.getAttribute('data-target');
+      const rating = btn.getAttribute('data-thumb');
+      const msg = row.querySelector('.feedback-msg');
+      try {
+        const res = await Api.feedback({ targetType: 'user', targetId, rating, context: context || 'search' });
+        row.querySelectorAll('[data-thumb]').forEach((b) => b.classList.remove('btn-primary'));
+        btn.classList.add('btn-primary');
+        msg.textContent = res.rating === 'up'
+          ? 'Thanks — we will surface them more.'
+          : 'Thanks — we will show fewer like this.';
+      } catch (e) {
+        msg.textContent = e.message;
+      }
+    };
+  });
+}
 
 function renderSearchResults(container, data) {
   const { understanding, results, mode, team, hiddenExperts } = data;
@@ -697,6 +855,7 @@ function renderSearchResults(container, data) {
                 ${r.trustScore != null ? `<span class="muted">· trust ${r.trustScore}</span>` : ''}
               </p>
               <div>${r.skills.map((s) => `<span class="badge ${(r.matchedSkills || []).includes(s) ? 'badge-matched' : 'badge-skill'}">${escapeHtml(s)}</span>`).join(' ')}</div>
+              ${explainHtml(r, 'search')}
             </div>
           </div>
           <div class="score-pill">score ${r.score}</div>
@@ -708,6 +867,7 @@ function renderSearchResults(container, data) {
   container.querySelectorAll('[data-profile]').forEach((el) => {
     el.onclick = () => App.navigate('profile', { id: el.getAttribute('data-profile') });
   });
+  bindFeedback(container, 'search');
 }
 
 // ---------- AI Team Builder ----------
@@ -752,6 +912,7 @@ Views.teams = function (root, params) {
                   <strong style="cursor:pointer;" data-profile="${m.user.id}">${escapeHtml(m.user.name)}</strong>
                   <p class="muted" style="margin:4px 0;">${escapeHtml(m.user.availability)} · trust ${m.trustScore} · covers ${escapeHtml((m.covers || []).join(', ')) || '—'}</p>
                   <div>${m.skills.map((s) => `<span class="badge badge-skill">${escapeHtml(s)}</span>`).join(' ')}</div>
+                  ${explainHtml(m, 'team')}
                 </div>
               </div>
               <div class="score-pill">${m.score}</div>
@@ -762,6 +923,7 @@ Views.teams = function (root, params) {
       results.querySelectorAll('[data-profile]').forEach((el) => {
         el.onclick = () => App.navigate('profile', { id: el.getAttribute('data-profile') });
       });
+      bindFeedback(results, 'team');
     } catch (e) {
       results.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
     }
@@ -969,6 +1131,7 @@ Views.recommendations = async function (root) {
                 <strong style="cursor:pointer;" data-profile="${r.user.id}">${escapeHtml(r.user.name)}</strong>
                 <p class="muted" style="margin:4px 0;"><i data-lucide="map-pin" style="width: 14px; height: 14px; vertical-align: middle;"></i> ${escapeHtml(r.user.location || '—')} · trust ${r.trustScore}</p>
                 <div>${(r.skills || r.matchedSkills || r.teachable || []).slice(0, 6).map((s) => `<span class="badge badge-skill">${escapeHtml(s)}</span>`).join(' ')}</div>
+                ${explainHtml(r, 'recs')}
               </div>
             </div>
             <div class="score-pill">${Math.round(r.score)}</div>
@@ -979,6 +1142,7 @@ Views.recommendations = async function (root) {
     root.querySelectorAll('[data-profile]').forEach((el) => {
       el.onclick = () => App.navigate('profile', { id: el.getAttribute('data-profile') });
     });
+    bindFeedback(root, 'recs');
   } catch (e) {
     root.querySelector('#recs').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
   }

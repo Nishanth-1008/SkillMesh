@@ -4,6 +4,8 @@
 
 const { computeTrustScore, getUserSkillNames } = require('./trust');
 const { skillMatches } = require('./teamBuilder');
+const { buildExplain } = require('./explain');
+const { feedbackModifier } = require('./feedback');
 
 function inCommunity(state, userId, communityId) {
   if (!communityId) return true;
@@ -20,10 +22,11 @@ function sameLocation(a, b) {
   return tb.some((t) => t.length > 3 && ta.has(t));
 }
 
-function recommendMentors(state, { userId, communityId, limit = 10 }) {
+function recommendMentors(state, { userId, communityId, limit = 10, viewerId }) {
   const me = state.users.find((u) => u.id === userId);
   const mySkills = userId ? getUserSkillNames(state, userId) : [];
   const results = [];
+  const feedbackFor = (id) => feedbackModifier(state, id, viewerId || userId);
 
   for (const user of state.users) {
     if (userId && user.id === userId) continue;
@@ -47,6 +50,12 @@ function recommendMentors(state, { userId, communityId, limit = 10 }) {
 
     const trust = computeTrustScore(state, user.id);
     const endorsements = state.endorsements.filter((e) => e.toUserId === user.id).length;
+    const explain = buildExplain({
+      teachable,
+      trustScore: trust.score,
+      endorsements,
+      availability: user.availability,
+    });
 
     results.push({
       type: 'mentor',
@@ -55,15 +64,17 @@ function recommendMentors(state, { userId, communityId, limit = 10 }) {
       teachable,
       trustScore: trust.score,
       endorsements,
-      score: teachable.length * 10 + (teaching ? 8 : 0) + trust.score * 0.2 + endorsements * 3,
+      explain,
+      score: teachable.length * 10 + (teaching ? 8 : 0) + trust.score * 0.2 + endorsements * 3 + feedbackFor(user.id),
     });
   }
 
   return results.sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
-function recommendVolunteers(state, { skills = [], communityId, limit = 10 }) {
+function recommendVolunteers(state, { skills = [], communityId, limit = 10, viewerId }) {
   const results = [];
+  const feedbackFor = (id) => feedbackModifier(state, id, viewerId);
   for (const user of state.users) {
     if (!inCommunity(state, user.id, communityId)) continue;
     if (user.availability !== 'available') continue;
@@ -86,14 +97,21 @@ function recommendVolunteers(state, { skills = [], communityId, limit = 10 }) {
       skills: userSkills,
       trustScore: trust.score,
       volunteerHistory,
-      score: matched.length * 10 + trust.score * 0.15 + volunteerHistory * 5 + 5,
+      explain: buildExplain({
+        matchedSkills: matched,
+        trustScore: trust.score,
+        volunteerHistory,
+        availability: user.availability,
+      }),
+      score: matched.length * 10 + trust.score * 0.15 + volunteerHistory * 5 + 5 + feedbackFor(user.id),
     });
   }
   return results.sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
-function recommendExperts(state, { skills = [], communityId, limit = 10 }) {
+function recommendExperts(state, { skills = [], communityId, limit = 10, viewerId }) {
   const results = [];
+  const feedbackFor = (id) => feedbackModifier(state, id, viewerId);
   for (const user of state.users) {
     if (!inCommunity(state, user.id, communityId)) continue;
 
@@ -119,17 +137,23 @@ function recommendExperts(state, { skills = [], communityId, limit = 10 }) {
       expertSkills,
       matchedSkills: matched,
       trustScore: trust.score,
-      score: matched.length * 12 + trust.score * 0.2,
+      explain: buildExplain({
+        matchedSkills: matched,
+        trustScore: trust.score,
+        availability: user.availability,
+      }),
+      score: matched.length * 12 + trust.score * 0.2 + feedbackFor(user.id),
     });
   }
   return results.sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
-function similarPeople(state, { userId, communityId, limit = 10 }) {
+function similarPeople(state, { userId, communityId, limit = 10, viewerId }) {
   const mySkills = getUserSkillNames(state, userId);
   if (!mySkills.length) return [];
 
   const results = [];
+  const feedbackFor = (id) => feedbackModifier(state, id, viewerId || userId);
   for (const user of state.users) {
     if (user.id === userId) continue;
     if (!inCommunity(state, user.id, communityId)) continue;
@@ -145,7 +169,12 @@ function similarPeople(state, { userId, communityId, limit = 10 }) {
       sharedSkills: overlap,
       skills,
       trustScore: trust.score,
-      score: overlap.length * 10 + trust.score * 0.1,
+      explain: buildExplain({
+        sharedSkills: overlap,
+        trustScore: trust.score,
+        availability: user.availability,
+      }),
+      score: overlap.length * 10 + trust.score * 0.1 + feedbackFor(user.id),
     });
   }
   return results.sort((a, b) => b.score - a.score).slice(0, limit);
@@ -174,11 +203,12 @@ function relatedSkills(state, { skill, limit = 8 }) {
     .map(([name, count]) => ({ skill: name, coOccurrence: count }));
 }
 
-function nearbyContributors(state, { userId, communityId, limit = 10 }) {
+function nearbyContributors(state, { userId, communityId, limit = 10, viewerId }) {
   const me = state.users.find((u) => u.id === userId);
   if (!me || !me.location) return [];
 
   const results = [];
+  const feedbackFor = (id) => feedbackModifier(state, id, viewerId || userId);
   for (const user of state.users) {
     if (user.id === userId) continue;
     if (!inCommunity(state, user.id, communityId)) continue;
@@ -191,7 +221,12 @@ function nearbyContributors(state, { userId, communityId, limit = 10 }) {
       user: { id: user.id, name: user.name, location: user.location, availability: user.availability },
       skills,
       trustScore: trust.score,
-      score: trust.score + (user.availability === 'available' ? 10 : 0),
+      explain: buildExplain({
+        trustScore: trust.score,
+        availability: user.availability,
+        sameArea: user.location,
+      }),
+      score: trust.score + (user.availability === 'available' ? 10 : 0) + feedbackFor(user.id),
     });
   }
   return results.sort((a, b) => b.score - a.score).slice(0, limit);

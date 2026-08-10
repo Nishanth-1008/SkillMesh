@@ -66,6 +66,7 @@ const Api = {
   removeMySkill: (userSkillId) => Api._request('DELETE', `/profiles/me/skills/${userSkillId}`, { auth: true }),
 
   search: (payload) => Api._request('POST', '/search', { body: payload, auth: true }),
+  semanticSearch: (payload) => Api._request('POST', '/search/semantic', { body: payload, auth: true }),
   graph: (communityId) => Api._request('GET', `/graph${communityId ? `?communityId=${communityId}` : ''}`),
 
   // Phase 2
@@ -88,6 +89,7 @@ const Api = {
     return Api._request('GET', `/recommendations${qs ? `?${qs}` : ''}`, { auth: true });
   },
   askRecommendations: (payload) => Api._request('POST', '/recommendations/ask', { body: payload, auth: true }),
+  feedback: (payload) => Api._request('POST', '/recommendations/feedback', { body: payload, auth: true }),
 
   getTrust: (userId, communityId) =>
     Api._request('GET', `/trust/${userId}${communityId ? `?communityId=${communityId}` : ''}`),

@@ -4,6 +4,9 @@ const crypto = require('crypto');
 const { Router } = require('../utils/router');
 const { getState, save } = require('../db');
 const { requireAuth, optionalAuth } = require('../middleware/requireAuth');
+const { hasProjectRole } = require('../middleware/rbac');
+const { validate } = require('../middleware/validate');
+const { projectCreate } = require('../validation/schemas');
 const { addRelationship } = require('../graph/relationships');
 const { recordContribution } = require('../services/trust');
 const { notify, logActivity } = require('../services/notify');
@@ -45,14 +48,9 @@ router.get('/', optionalAuth, (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/', requireAuth, (req, res, next) => {
+router.post('/', requireAuth, validate(projectCreate), (req, res, next) => {
   try {
     const { title, description, goal, communityId, timeline } = req.body;
-    if (!title) {
-      const err = new Error('title is required');
-      err.status = 400;
-      throw err;
-    }
     const state = getState();
     if (communityId) {
       const community = state.communities.find((c) => c.id === communityId);
@@ -128,7 +126,7 @@ router.put('/:id', requireAuth, (req, res, next) => {
       err.status = 404;
       throw err;
     }
-    if (project.ownerId !== req.user.id) {
+    if (!hasProjectRole(state, req.user.id, project.id, ['owner'])) {
       const err = new Error('Only the project owner can update it');
       err.status = 403;
       throw err;
@@ -160,10 +158,7 @@ router.post('/:id/invite', requireAuth, (req, res, next) => {
       err.status = 404;
       throw err;
     }
-    const membership = state.projectMembers.find(
-      (m) => m.projectId === project.id && m.userId === req.user.id && m.status === 'joined'
-    );
-    if (!membership || !['owner', 'lead'].includes(membership.role)) {
+    if (!hasProjectRole(state, req.user.id, project.id, ['owner', 'lead'])) {
       const err = new Error('Only project owners/leads can invite');
       err.status = 403;
       throw err;
@@ -328,7 +323,7 @@ router.post('/:id/approve', requireAuth, (req, res, next) => {
       err.status = 404;
       throw err;
     }
-    if (project.ownerId !== req.user.id) {
+    if (!hasProjectRole(state, req.user.id, project.id, ['owner'])) {
       const err = new Error('Only the owner can approve join requests');
       err.status = 403;
       throw err;

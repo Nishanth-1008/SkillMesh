@@ -468,7 +468,12 @@ Views.emergency = async function (root) {
   if (Store.isLoggedIn()) {
     const { communities } = await Api.listCommunities();
     if (communities[0]) root.querySelector('#cid').value = communities[0].id;
-    root.querySelector('#open').onclick = async () => {
+    const openBtn = root.querySelector('#open');
+    openBtn.onclick = async () => {
+      if (openBtn.disabled) return;
+      const original = openBtn.innerHTML;
+      openBtn.disabled = true;
+      openBtn.innerHTML = `<span class="spinner"></span> Alerting responders…`;
       try {
         const result = await Api.createEmergency({
           title: root.querySelector('#title').value.trim(),
@@ -489,8 +494,11 @@ Views.emergency = async function (root) {
               </div>
             `).join('')}
           </div>`;
-        loadList();
+        App.showToast('Incident opened — responders have been alerted.');
+        await loadList();
       } catch (e) {
+        openBtn.disabled = false;
+        openBtn.innerHTML = original;
         root.querySelector('#msg').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
       }
     };
@@ -506,7 +514,11 @@ Views.emergency = async function (root) {
             <div><strong>${escapeHtml(e.title)}</strong> <span class="badge ${e.status === 'active' ? 'badge-urgent' : ''}">${escapeHtml(e.severity)} · ${escapeHtml(e.status)}</span>
               <p class="muted">${(e.skillsNeeded || []).map((s) => escapeHtml(s)).join(', ')}</p></div>
             <div>
-              ${Store.isLoggedIn() && e.status === 'active' ? `<button class="btn btn-primary" data-resp="${e.id}">I can help</button>` : ''}
+              ${Store.isLoggedIn() && e.status === 'active'
+                ? (e.myResponse
+                    ? `<button class="btn btn-primary" disabled><i data-lucide="check" style="width: 14px; height: 14px; vertical-align: middle;"></i> En route (ETA 15m)</button>`
+                    : `<button class="btn btn-primary" data-resp="${e.id}">I can help</button>`)
+                : ''}
               ${me && e.creatorId === me.id && e.status === 'active' ? `<button class="btn" data-resolve="${e.id}">Resolve</button>` : ''}
             </div>
           </div>
@@ -514,13 +526,45 @@ Views.emergency = async function (root) {
         <p class="muted">${active.length} active</p>
       </div>`;
     root.querySelectorAll('[data-resp]').forEach((btn) => {
-      btn.onclick = async () => { await Api.respondEmergency(btn.getAttribute('data-resp'), 15); App.navigate('emergency'); };
+      btn.onclick = async () => {
+        if (btn.disabled) return;
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner"></span> Sending help…`;
+        try {
+          await Api.respondEmergency(btn.getAttribute('data-resp'), 15);
+          App.showToast('You are on your way — your response was recorded.');
+          await loadList();
+        } catch (e) {
+          btn.disabled = false;
+          btn.innerHTML = original;
+          App.showToast(e.message || 'Failed to send your response. Please try again.');
+        }
+      };
     });
     root.querySelectorAll('[data-resolve]').forEach((btn) => {
-      btn.onclick = async () => { await Api.resolveEmergency(btn.getAttribute('data-resolve')); App.navigate('emergency'); };
+      btn.onclick = async () => {
+        if (btn.disabled) return;
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner"></span> Resolving…`;
+        try {
+          await Api.resolveEmergency(btn.getAttribute('data-resolve'));
+          App.showToast('Incident resolved — thanks for closing it out.');
+          await loadList();
+        } catch (e) {
+          btn.disabled = false;
+          btn.innerHTML = original;
+          App.showToast(e.message || 'Failed to resolve the incident. Please try again.');
+        }
+      };
     });
   }
-  await loadList();
+  try {
+    await loadList();
+  } catch (e) {
+    root.querySelector('#list').innerHTML = `<div class="error-box">${escapeHtml(e.message || 'Could not load incidents.')}</div>`;
+  }
 };
 
 Views.developers = async function (root) {

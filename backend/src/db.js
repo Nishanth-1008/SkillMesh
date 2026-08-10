@@ -11,6 +11,7 @@ const { Pool } = require('pg');
 const { config, pgPoolConfig } = require('./config');
 
 const SCHEMA_PATH = path.join(__dirname, 'db', 'schema.sql');
+const SEMANTIC_SCHEMA_PATH = path.join(__dirname, 'db', 'semantic_vectors.sql');
 
 function emptyState() {
   return {
@@ -58,6 +59,10 @@ function emptyState() {
     digitalTwins: [],
     communityMemory: [],
     autonomousTasks: [],
+    refreshTokens: [],
+    passwordResetTokens: [],
+    feedback: [],
+    semanticVectors: [],
   };
 }
 
@@ -75,7 +80,8 @@ const TABLE_ORDER_TRUNCATE = [
   'badges', 'contributions', 'endorsements',
   'project_members', 'projects',
   'relationships', 'user_skills', 'skills',
-  'community_members', 'communities', 'users',
+  'community_members', 'communities', 'refresh_tokens', 'password_reset_tokens', 'feedback', 'users',
+  'semantic_vectors',
 ];
 
 const TABLE_ORDER_INSERT = [...TABLE_ORDER_TRUNCATE].reverse();
@@ -631,7 +637,88 @@ const COLLECTIONS = {
       completedAt: r.completed_at ? iso(r.completed_at) : null,
     }),
   },
+  refreshTokens: {
+    table: 'refresh_tokens',
+    toRow: (r) => [
+      r.id, r.userId, r.tokenHash, r.expiresAt || new Date().toISOString(),
+      r.createdAt || new Date().toISOString(), r.revokedAt || null,
+    ],
+    cols: '(id, user_id, token_hash, expires_at, created_at, revoked_at)',
+    placeholders: '($1,$2,$3,$4,$5,$6)',
+    fromRow: (r) => ({
+      id: r.id, userId: r.user_id, tokenHash: r.token_hash,
+      expiresAt: iso(r.expires_at), createdAt: iso(r.created_at),
+      revokedAt: r.revoked_at ? iso(r.revoked_at) : null,
+    }),
+  },
+  passwordResetTokens: {
+    table: 'password_reset_tokens',
+    toRow: (r) => [
+      r.id, r.userId, r.tokenHash, r.expiresAt || new Date().toISOString(),
+      r.createdAt || new Date().toISOString(), r.usedAt || null,
+    ],
+    cols: '(id, user_id, token_hash, expires_at, created_at, used_at)',
+    placeholders: '($1,$2,$3,$4,$5,$6)',
+    fromRow: (r) => ({
+      id: r.id, userId: r.user_id, tokenHash: r.token_hash,
+      expiresAt: iso(r.expires_at), createdAt: iso(r.created_at),
+      usedAt: r.used_at ? iso(r.used_at) : null,
+    }),
+  },
+  feedback: {
+    table: 'feedback',
+    toRow: (r) => [
+      r.id, r.userId, r.targetType, r.targetId, r.rating,
+      r.context || '', r.createdAt || new Date().toISOString(),
+    ],
+    cols: '(id, user_id, target_type, target_id, rating, context, created_at)',
+    placeholders: '($1,$2,$3,$4,$5,$6,$7)',
+    fromRow: (r) => ({
+      id: r.id, userId: r.user_id, targetType: r.target_type, targetId: r.target_id,
+      rating: r.rating, context: r.context || '', createdAt: iso(r.created_at),
+    }),
+  },
+  semanticVectors: {
+    table: 'semantic_vectors',
+    toRow: (r) => [
+      r.id, r.entityType, r.entityId, r.text,
+      vectorToString(r.vector), r.createdAt || new Date().toISOString(),
+      r.updatedAt || new Date().toISOString(),
+    ],
+    cols: '(id, entity_type, entity_id, text, vector, created_at, updated_at)',
+    placeholders: '($1,$2,$3,$4,$5,$6,$7)',
+    fromRow: (r) => ({
+      id: r.id, entityType: r.entity_type, entityId: r.entity_id, text: r.text,
+      vector: parseVector(r.vector), createdAt: iso(r.created_at), updatedAt: iso(r.updated_at),
+    }),
+  },
 };
+
+function vectorToString(vector) {
+  if (!Array.isArray(vector)) return null;
+  return `[${vector.map((v) => Number(v).toFixed(6)).join(',')}]`;
+}
+
+function parseVector(value) {
+  if (!value) return null;
+  const s = String(value).trim().replace(/^\[|\]$/g, '');
+  if (!s) return [];
+  return s.split(',').map((n) => parseFloat(n)).filter((n) => !Number.isNaN(n));
+}
+
+/** True when Postgres is active AND the pgvector table exists. Cached. */
+let semanticTableCached = null;
+async function semanticTableAvailable() {
+  if (!usePostgres) return false;
+  if (semanticTableCached !== null) return semanticTableCached;
+  try {
+    const { rows } = await poolQuery("SELECT to_regclass('public.semantic_vectors') AS t");
+    semanticTableCached = Boolean(rows[0] && rows[0].t);
+  } catch {
+    semanticTableCached = false;
+  }
+  return semanticTableCached;
+}
 
 function iso(v) {
   if (!v) return null;
@@ -639,13 +726,26 @@ function iso(v) {
   return new Date(v).toISOString();
 }
 
-let pool = null;
 let state = null;
 let writeQueued = false;
 let persistInFlight = null;
+let dirty = false;
 
 const JSON_DB_PATH = path.join(__dirname, '..', 'data', 'db.json');
 const usePostgres = !!(config.DATABASE_URL || config.PGHOST);
+
+let pool = null;
+let poolBroken = false;
+
+function resetPool() {
+  if (pool) {
+    try {
+      pool.end();
+    } catch { /* already ended */ }
+  }
+  pool = null;
+  poolBroken = false;
+}
 
 function getPool() {
   if (!usePostgres) {
@@ -653,9 +753,54 @@ function getPool() {
   }
   if (!pool) {
     pool = new Pool(pgPoolConfig());
-    pool.on('error', (err) => console.error('[db] pool error', err.message));
+    pool.on('error', (err) => {
+      console.error('[db] pool error:', err.message);
+      // A fatal connection error leaves the pool unusable — recreate it so the
+      // next query gets a fresh connection (automatic reconnection).
+      if (!poolBroken) {
+        poolBroken = true;
+        setImmediate(() => {
+          if (poolBroken) resetPool();
+        });
+      }
+    });
   }
   return pool;
+}
+
+// Postgres error codes / Node socket codes treated as transient (retryable).
+function isTransient(err) {
+  if (!err) return false;
+  const codes = ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EPIPE', 'ECONNABORTED', '57P01', '57P02', '57P03'];
+  return codes.includes(err.code) || codes.some((c) => String(err.message || '').includes(c));
+}
+
+// Query with bounded retry for transient failures. On retry the broken pool is
+// discarded so the connection attempt starts clean.
+async function poolQuery(text, params, { retries = 2 } = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const p = getPool();
+      if (!p) throw new Error('Postgres is not enabled');
+      const result = await p.query(text, params);
+      poolBroken = false;
+      return result;
+    } catch (err) {
+      lastErr = err;
+      if (!isTransient(err)) throw err;
+      if (poolBroken) resetPool();
+      await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+    }
+  }
+  throw lastErr;
+}
+
+// Liveness probe for health checks.
+async function ping() {
+  if (!usePostgres) return { ok: false, mode: 'json' };
+  await poolQuery('SELECT 1');
+  return { ok: true, mode: 'postgres' };
 }
 
 async function migrate() {
@@ -668,15 +813,30 @@ async function migrate() {
     return;
   }
   const sql = fs.readFileSync(SCHEMA_PATH, 'utf8');
-  await getPool().query(sql);
+  await poolQuery(sql);
   console.log('[db] schema applied');
+
+  // pgvector is optional: if the extension/table can't be created (managed
+  // Postgres without vector support), degrade to in-memory cosine search.
+  semanticTableCached = null;
+  try {
+    const semanticSql = fs.readFileSync(SEMANTIC_SCHEMA_PATH, 'utf8');
+    await poolQuery(semanticSql);
+    if (await semanticTableAvailable()) {
+      console.log('[db] pgvector ready (semantic_vectors + hnsw)');
+    }
+  } catch (e) {
+    semanticTableCached = false;
+    console.warn(`[db] pgvector unavailable, semantic search uses in-memory cosine: ${e.message}`);
+  }
 }
 
 async function hydrate() {
   if (!usePostgres) {
     if (fs.existsSync(JSON_DB_PATH)) {
       try {
-        state = JSON.parse(fs.readFileSync(JSON_DB_PATH, 'utf8'));
+        const parsed = JSON.parse(fs.readFileSync(JSON_DB_PATH, 'utf8'));
+        state = { ...emptyState(), ...parsed };
         console.log('[db] hydrated state from JSON file');
       } catch (err) {
         console.error('[db] error parsing db.json, starting with empty state:', err.message);
@@ -688,10 +848,10 @@ async function hydrate() {
     return state;
   }
 
-  const p = getPool();
   const next = emptyState();
   for (const [key, meta] of Object.entries(COLLECTIONS)) {
-    const { rows } = await p.query(`SELECT * FROM ${meta.table}`);
+    if (key === 'semanticVectors' && !(await semanticTableAvailable())) continue;
+    const { rows } = await poolQuery(`SELECT * FROM ${meta.table}`);
     next[key] = rows.map(meta.fromRow);
   }
   state = next;
@@ -710,20 +870,25 @@ async function persist() {
     return;
   }
 
+  // Serialize concurrent writes: if a persist is already running, wait for it.
+  // A failed persist must never wedge the write path, so the in-flight slot is
+  // always cleared (see the outer `.finally`).
   if (persistInFlight) return persistInFlight;
 
-  persistInFlight = (async () => {
-    const p = getPool();
-    const client = await p.connect();
+  const p = getPool();
+  persistInFlight = p.connect().then(async (client) => {
     try {
+      const semanticOk = await semanticTableAvailable();
       await client.query('BEGIN');
       for (const table of TABLE_ORDER_TRUNCATE) {
+        if (table === 'semantic_vectors' && !semanticOk) continue;
         await client.query(`DELETE FROM ${table}`);
       }
       for (const table of TABLE_ORDER_INSERT) {
         const entry = Object.entries(COLLECTIONS).find(([, m]) => m.table === table);
         if (!entry) continue;
         const [key, meta] = entry;
+        if (key === 'semanticVectors' && !semanticOk) continue;
         const rows = state[key] || [];
         for (const row of rows) {
           await client.query(
@@ -734,14 +899,17 @@ async function persist() {
       }
       await client.query('COMMIT');
     } catch (e) {
-      await client.query('ROLLBACK');
+      try {
+        await client.query('ROLLBACK');
+      } catch { /* connection already dead */ }
       console.error('[db] persist failed:', e.message);
       throw e;
     } finally {
       client.release();
-      persistInFlight = null;
     }
-  })();
+  }).finally(() => {
+    persistInFlight = null;
+  });
 
   return persistInFlight;
 }
@@ -754,12 +922,24 @@ async function load() {
 }
 
 function save() {
+  dirty = true;
   if (writeQueued) return;
   writeQueued = true;
   setImmediate(() => {
     writeQueued = false;
-    persist().catch((e) => console.error('[db] save error:', e.message));
+    flush().catch((e) => console.error('[db] save error:', e.message));
   });
+}
+
+// Coalesces rapid saves (e.g. several requests in the same tick or while a
+// Postgres persist is mid-flight) so the FINAL state always reaches disk:
+// any change made while a persist runs marks dirty again and triggers a
+// follow-up write once the current one finishes.
+async function flush() {
+  while (dirty) {
+    dirty = false;
+    await persist();
+  }
 }
 
 function getState() {
@@ -779,8 +959,10 @@ async function resetAllData() {
   const p = getPool();
   const client = await p.connect();
   try {
+    const semanticOk = await semanticTableAvailable();
     await client.query('BEGIN');
     for (const table of TABLE_ORDER_TRUNCATE) {
+      if (table === 'semantic_vectors' && !semanticOk) continue;
       await client.query(`DELETE FROM ${table}`);
     }
     await client.query('COMMIT');
@@ -812,6 +994,10 @@ module.exports = {
   close,
   emptyState,
   getPool,
+  poolQuery,
+  ping,
+  semanticTableAvailable,
+  isPostgres: () => usePostgres,
   // legacy name kept so old seed imports don't explode during transition
   DB_FILE: JSON_DB_PATH,
 };

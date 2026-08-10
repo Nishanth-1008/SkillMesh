@@ -1,10 +1,11 @@
 const http = require('http');
 const { Router, securityHeaders, rateLimit } = require('./utils/router');
 const { config } = require('./config');
-const { load, getState, close } = require('./db');
+const { load, getState, close, ping } = require('./db');
 const { requireAuth } = require('./middleware/requireAuth');
 const { serveStatic } = require('./static');
 const { ensureDailyBackup } = require('./backup');
+const { openapiSpec, openapiDocsHtml } = require('./openapi');
 
 async function main() {
   await load();
@@ -35,12 +36,22 @@ async function main() {
     } catch (e) { next(e); }
   });
 
-  app.get('/health', (req, res) => {
+  app.get('/health', async (req, res) => {
+    let dbPing = 'unknown';
+    let database = 'postgres';
+    try {
+      const p = await ping();
+      database = p.mode;
+      dbPing = p.ok ? 'ok' : 'error';
+    } catch (e) {
+      dbPing = 'error';
+    }
     res.json({
       status: 'ok',
       service: 'skillmesh-backend',
       phase: 6,
-      database: 'postgres',
+      database,
+      dbPing,
       features: [
         'auth', 'communities', 'profiles', 'graph', 'ai-search',
         'team-builder', 'projects', 'recommendations', 'trust',
@@ -92,6 +103,13 @@ async function main() {
   mount('/api/ecosystem', './routes/ecosystem');
   mount('/api/intelligence', './routes/intelligence');
   mount('/api/autonomy', './routes/autonomy');
+
+  // API contracts & docs (Phase 1)
+  app.get('/api/openapi.json', (req, res) => res.json(openapiSpec));
+  app.get('/api/docs', (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.end(openapiDocsHtml);
+  });
 
   const server = http.createServer((req, res) => {
     // Serve the SPA static assets (with long-lived cache headers) for any

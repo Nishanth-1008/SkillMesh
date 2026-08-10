@@ -2,6 +2,9 @@ const crypto = require('crypto');
 const { Router } = require('../utils/router');
 const { getState, save } = require('../db');
 const { requireAuth, optionalAuth } = require('../middleware/requireAuth');
+const { hasCommunityRole } = require('../middleware/rbac');
+const { validate } = require('../middleware/validate');
+const { communityCreate } = require('../validation/schemas');
 const { addRelationship, removeRelationship } = require('../graph/relationships');
 
 const router = new Router();
@@ -26,14 +29,9 @@ router.get('/', optionalAuth, (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/', requireAuth, (req, res, next) => {
+router.post('/', requireAuth, validate(communityCreate), (req, res, next) => {
   try {
     const { name, description } = req.body;
-    if (!name) {
-      const err = new Error('name is required');
-      err.status = 400;
-      throw err;
-    }
     const state = getState();
     const community = {
       id: crypto.randomUUID(),
@@ -188,7 +186,7 @@ router.put('/:id', requireAuth, (req, res, next) => {
       err.status = 404;
       throw err;
     }
-    if (community.ownerId !== req.user.id) {
+    if (!hasCommunityRole(state, req.user.id, community.id, ['owner'])) {
       const err = new Error('Only the community owner can update it');
       err.status = 403;
       throw err;

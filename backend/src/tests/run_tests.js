@@ -1,3 +1,4 @@
+process.env.SKILLMESH_TESTING = '1';
 const assert = require('assert');
 const crypto = require('crypto');
 const os = require('os');
@@ -17,8 +18,14 @@ const { ensureAgents, runAgent, autoFormTeams } = require('../services/autonomy'
 const { createEmergency, syncPassport, impactReport } = require('../services/ecosystem');
 const { notify, logActivity } = require('../services/notify');
 const { createSnapshot, restoreSnapshot } = require('../backup');
+const { hasProjectRole, hasCommunityRole, hasOrgRole } = require('../middleware/rbac');
 const searchRouter = require('../routes/search');
 const authRouter = require('../routes/auth');
+const recommendationsRouter = require('../routes/recommendations');
+const { feedbackModifier } = require('../services/feedback');
+const { understandQuery } = require('../services/llm');
+const { buildExplain } = require('../services/explain');
+const { recommendVolunteers, recommendAll } = require('../services/recommendations');
 
 // ---------- Helpers ----------
 
@@ -40,6 +47,8 @@ function mockRequest(router, method, url, { headers = {}, body = null } = {}) {
       rawBody: '',
       status(code) { this.statusCode = code; return this; },
       setHeader() {},
+      cookie() {},
+      clearCookie() {},
       end(chunk) {
         this.rawBody = String(chunk || '');
         this.writableEnded = true;
@@ -135,7 +144,62 @@ async function runAllTests() {
   });
   assert.strictEqual(goodLogin.statusCode, 200, 'Login with correct password must return 200.');
   assert(goodLogin.jsonBody.token, 'Login should return a token.');
+  assert(goodLogin.jsonBody.refreshToken, 'Login should return a refresh token.');
   console.log('✓ 1. Auth & Session Management (JWT, expiry, 401s, UTF-8, duplicate-submit) passed');
+
+  // ---------- 1b. Refresh token rotation, logout, password reset ----------
+  const refresh = await mockRequest(authRouter, 'POST', '/refresh', {
+    body: { refreshToken: goodLogin.jsonBody.refreshToken },
+  });
+  assert.strictEqual(refresh.statusCode, 200, 'Refresh with a valid refresh token must succeed.');
+  assert(refresh.jsonBody.token, 'Refresh should return a fresh access token.');
+  assert(refresh.jsonBody.refreshToken !== goodLogin.jsonBody.refreshToken, 'Refresh tokens must rotate.');
+
+  const badRefresh = await mockRequest(authRouter, 'POST', '/refresh', {
+    body: { refreshToken: goodLogin.jsonBody.refreshToken },
+  });
+  assert.strictEqual(badRefresh.statusCode, 401, 'Reused (rotated) refresh token must be rejected.');
+
+  const refreshFromCookie = await mockRequest(authRouter, 'POST', '/refresh', {
+    headers: { cookie: `skillmesh_rt=${refresh.jsonBody.refreshToken}` },
+    body: {},
+  });
+  assert.strictEqual(refreshFromCookie.statusCode, 200, 'Refresh via HttpOnly cookie must succeed.');
+
+  const logout = await mockRequest(authRouter, 'POST', '/logout', {
+    body: { refreshToken: refreshFromCookie.jsonBody.refreshToken },
+  });
+  assert.strictEqual(logout.statusCode, 200, 'Logout must succeed.');
+  const afterLogout = await mockRequest(authRouter, 'POST', '/refresh', {
+    body: { refreshToken: refreshFromCookie.jsonBody.refreshToken },
+  });
+  assert.strictEqual(afterLogout.statusCode, 401, 'Revoked refresh token must be rejected after logout.');
+
+  const forgot = await mockRequest(authRouter, 'POST', '/forgot-password', {
+    body: { email: specialEmail },
+  });
+  assert.strictEqual(forgot.statusCode, 200, 'Forgot-password must return 200.');
+  assert(forgot.jsonBody.resetToken, 'Dev mode should return a reset token.');
+
+  const resetBad = await mockRequest(authRouter, 'POST', '/reset-password', {
+    body: { token: 'not-a-real-token', newPassword: 'newpass123' },
+  });
+  assert.strictEqual(resetBad.statusCode, 400, 'Reset with an invalid token must return 400.');
+
+  const reset = await mockRequest(authRouter, 'POST', '/reset-password', {
+    body: { token: forgot.jsonBody.resetToken, newPassword: 'newpass123' },
+  });
+  assert.strictEqual(reset.statusCode, 200, 'Reset with a valid token must succeed.');
+
+  const oldPw = await mockRequest(authRouter, 'POST', '/login', {
+    body: { email: specialEmail, password: 'p@sswörd123' },
+  });
+  assert.strictEqual(oldPw.statusCode, 401, 'Old password must fail after reset.');
+  const newPw = await mockRequest(authRouter, 'POST', '/login', {
+    body: { email: specialEmail, password: 'newpass123' },
+  });
+  assert.strictEqual(newPw.statusCode, 200, 'New password must work after reset.');
+  console.log('✓ 1b. Session refresh rotation, logout revocation & password reset passed');
 
   // ---------- 2. Communities (join / leave / dissolution) ----------
   const tempCommId = crypto.randomUUID();
@@ -280,6 +344,32 @@ async function runAllTests() {
   }
   assert(got429, 'Rate limiter should return 429 after the 100/min quota is exceeded.');
 
+  // RBAC helpers: owners pass, plain members are denied owner-only actions
+  const rbacComm = state.communities[0];
+  const rbacOwner = state.communityMembers.find(
+    (m) => m.communityId === rbacComm.id && m.role === 'owner'
+  );
+  const rbacMember = state.communityMembers.find(
+    (m) => m.communityId === rbacComm.id && m.role !== 'owner'
+  );
+  assert(rbacOwner && rbacMember, 'Seeded community should have both an owner and a member.');
+  assert(hasCommunityRole(state, rbacOwner.userId, rbacComm.id, ['owner']), 'Owner must pass owner role check.');
+  assert(!hasCommunityRole(state, rbacMember.userId, rbacComm.id, ['owner']), 'Plain member must fail owner role check.');
+  assert(hasCommunityRole(state, rbacMember.userId, rbacComm.id, ['member']), 'Plain member must pass member role check.');
+  assert(!hasCommunityRole(state, rbacMember.userId, rbacComm.id, ['lead']), 'Plain member must fail lead role check.');
+  const rbacProj = state.projects[0];
+  assert(hasProjectRole(state, rbacProj.ownerId, rbacProj.id, ['owner']), 'Project owner must pass owner role check.');
+  const rbacOrg = state.organizations[0];
+  if (rbacOrg) {
+    const orgOwner = state.organizationMembers.find(
+      (m) => m.organizationId === rbacOrg.id && m.role === 'owner'
+    );
+    if (orgOwner) {
+      assert(hasOrgRole(state, orgOwner.userId, rbacOrg.id, ['owner', 'admin']), 'Org owner must pass owner/admin role check.');
+      assert(!hasOrgRole(state, rbacMember.userId, rbacOrg.id, ['admin']), 'Non-member must fail org admin role check.');
+    }
+  }
+
   // Backup & restore round-trip (disaster recovery) in a temp dir
   const savedBackupDir = config.BACKUP_DIR;
   config.BACKUP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'skillmesh-backups-'));
@@ -293,7 +383,193 @@ async function runAllTests() {
   assert.strictEqual(after, before, 'Restore should roll state back to the snapshot.');
   assert(!state.users.some((u) => u.id === 'ghost-user'), 'Restored state must not contain post-snapshot writes.');
   config.BACKUP_DIR = savedBackupDir;
-  console.log('✓ 9. Security & Resilience (CORS whitelist, rate limit 100/min, backup/restore) passed');
+  console.log('✓ 9. Security & Resilience (CORS whitelist, rate limit, RBAC, backup/restore) passed');
+  console.log('✓ 9b. Backup & restore round-trip (disaster recovery) passed');
+
+  // ---------- 10. Phase 2: Explainability, Feedback Loop & LLM Harness ----------
+  // Every recommendation carries a human-readable `explain` array.
+  const explainedTeam = buildTeam(state, { skills: ['programming', 'design'], size: 3 });
+  assert(explainedTeam.team.length > 0, 'Team builder should return candidates.');
+  for (const member of explainedTeam.team) {
+    assert(Array.isArray(member.explain) && member.explain.length > 0, `Team member ${member.user.name} should have explain lines.`);
+    assert(member.explain.every((l) => typeof l === 'string' && l.length > 0), 'Explain lines should be non-empty strings.');
+  }
+
+  const explainedHidden = findHiddenExperts(state, { skills: ['programming'], limit: 3 });
+  for (const h of explainedHidden) {
+    assert(Array.isArray(h.explain) && h.explain.length > 0, 'Hidden experts should have explain lines.');
+  }
+
+  const explainedAll = recommendAll(state, { userId: state.users[0].id, skills: ['programming'], limit: 5 });
+  for (const key of ['mentors', 'volunteers', 'experts', 'similar', 'nearby']) {
+    for (const r of explainedAll[key]) {
+      assert(Array.isArray(r.explain) && r.explain.length > 0, `${key} recommendations should have explain lines.`);
+    }
+  }
+
+  // Search route results also expose explain
+  const explainSearch = await mockRequest(searchRouter, 'POST', '/', {
+    body: { query: 'React and Node developer' },
+  });
+  assert.strictEqual(explainSearch.statusCode, 200, 'Explain search should succeed.');
+  for (const r of explainSearch.jsonBody.results) {
+    assert(Array.isArray(r.explain), 'Search results should carry an explain array.');
+  }
+
+  // buildExplain helper composes readable sentences
+  const lines = buildExplain({ matchedSkills: ['programming'], trustScore: 87, endorsements: 3, availability: 'available' });
+  assert(lines.some((l) => l.includes('programming')), 'Explain should mention matched skills.');
+  assert(lines.some((l) => l.includes('87')), 'Explain should mention trust score.');
+
+  // Feedback loop: authenticated user can rate a recommendation (up/down)
+  const fbViewer = newPw.jsonBody.user;
+  const fbTarget = state.users.find((u) => u.id !== fbViewer.id);
+  assert(fbTarget, 'There should be another seeded user to give feedback about.');
+  const authHeaders = { authorization: `Bearer ${newPw.jsonBody.token}` };
+
+  const fbBad = await mockRequest(recommendationsRouter, 'POST', '/feedback', {
+    headers: authHeaders,
+    body: { targetType: 'user', targetId: fbTarget.id, rating: 'meh' },
+  });
+  assert.strictEqual(fbBad.statusCode, 400, 'Invalid rating must be rejected by validation.');
+
+  const fbUp = await mockRequest(recommendationsRouter, 'POST', '/feedback', {
+    headers: authHeaders,
+    body: { targetType: 'user', targetId: fbTarget.id, rating: 'up', context: 'search' },
+  });
+  assert.strictEqual(fbUp.statusCode, 200, 'Up-vote feedback should succeed.');
+
+  // Upsert: repeating the same (user, target, context) must not duplicate
+  const fbUp2 = await mockRequest(recommendationsRouter, 'POST', '/feedback', {
+    headers: authHeaders,
+    body: { targetType: 'user', targetId: fbTarget.id, rating: 'up', context: 'search' },
+  });
+  assert.strictEqual(fbUp2.statusCode, 200, 'Repeated up-vote should succeed.');
+  const fbMatches = getState().feedback.filter(
+    (f) => f.userId === fbViewer.id && f.targetType === 'user' && f.targetId === fbTarget.id && f.context === 'search'
+  );
+  assert.strictEqual(fbMatches.length, 1, 'Feedback should upsert, not duplicate.');
+
+  const fbDown = await mockRequest(recommendationsRouter, 'POST', '/feedback', {
+    headers: authHeaders,
+    body: { targetType: 'user', targetId: fbTarget.id, rating: 'down', context: 'search' },
+  });
+  assert.strictEqual(fbDown.statusCode, 200, 'Down-vote feedback should succeed.');
+  assert.strictEqual(fbMatches[0].rating, 'down', 'Upsert should update the rating in place.');
+
+  const fbList = await mockRequest(recommendationsRouter, 'GET', '/feedback?targetType=user', {
+    headers: authHeaders,
+  });
+  assert.strictEqual(fbList.statusCode, 200, 'Feedback list should be readable.');
+  assert(Array.isArray(fbList.jsonBody.feedback), 'GET /feedback should return an array.');
+  assert(fbList.jsonBody.feedback.some((f) => f.targetId === fbTarget.id), 'Feedback list should contain the recorded vote.');
+
+  const fbUnauth = await mockRequest(recommendationsRouter, 'POST', '/feedback', {
+    body: { targetType: 'user', targetId: fbTarget.id, rating: 'up' },
+  });
+  assert.strictEqual(fbUnauth.statusCode, 401, 'Feedback without auth must be rejected.');
+
+  // Scoring effect: up-vote adds +8, down-vote -14, capped at ±20
+  assert.strictEqual(feedbackModifier(state, fbTarget.id, fbViewer.id), -14, 'Down-vote should yield -14.');
+  getState().feedback.push({ id: crypto.randomUUID(), userId: fbViewer.id, targetType: 'user', targetId: fbTarget.id, rating: 'up', context: '', createdAt: new Date().toISOString() });
+  assert.strictEqual(feedbackModifier(state, fbTarget.id, fbViewer.id), -6, 'Mixed votes should sum.');
+  for (let i = 0; i < 5; i++) {
+    getState().feedback.push({ id: crypto.randomUUID(), userId: fbViewer.id, targetType: 'user', targetId: fbTarget.id, rating: 'up', context: '', createdAt: new Date().toISOString() });
+  }
+  assert.strictEqual(feedbackModifier(state, fbTarget.id, fbViewer.id), 20, 'Positive modifier should cap at 20.');
+
+  // A recommended volunteer's score shifts by exactly the modifier for the viewer
+  // (reset the target's vote history first so the ±20 cap can't mask the delta)
+  getState().feedback = getState().feedback.filter(
+    (f) => !(f.userId === fbViewer.id && f.targetType === 'user' && f.targetId === fbTarget.id)
+  );
+  getState().feedback.push({ id: crypto.randomUUID(), userId: fbViewer.id, targetType: 'user', targetId: fbTarget.id, rating: 'down', context: '', createdAt: new Date().toISOString() });
+  const volBefore = recommendVolunteers(getState(), { skills: ['programming'], viewerId: fbViewer.id, limit: 20 });
+  const volPick = volBefore.find((v) => v.user.id === fbTarget.id);
+  if (volPick) {
+    getState().feedback.push({ id: crypto.randomUUID(), userId: fbViewer.id, targetType: 'user', targetId: fbTarget.id, rating: 'up', context: '', createdAt: new Date().toISOString() });
+    const volAfter = recommendVolunteers(getState(), { skills: ['programming'], viewerId: fbViewer.id, limit: 20 });
+    const after = volAfter.find((v) => v.user.id === fbTarget.id);
+    assert(after && Math.abs(after.score - volPick.score - 8) < 1e-6, 'Volunteer score should rise by exactly the up-vote modifier.');
+  }
+
+  // LLM harness: with no endpoint configured, falls back to the heuristic
+  const savedLlmUrl = process.env.LLM_API_URL;
+  const savedLlmKey = process.env.LLM_API_KEY;
+  delete process.env.LLM_API_URL;
+  delete process.env.LLM_API_KEY;
+  const h1 = await understandQuery('Need an urgent React developer');
+  assert.strictEqual(h1.source, 'heuristic', 'Without an LLM endpoint, understanding must fall back to the heuristic.');
+  assert.strictEqual(h1.urgent, true, 'Heuristic should still detect urgency.');
+  assert(h1.skills.includes('programming'), 'Heuristic should extract programming from React/developer.');
+  if (savedLlmUrl !== undefined) process.env.LLM_API_URL = savedLlmUrl;
+  if (savedLlmKey !== undefined) process.env.LLM_API_KEY = savedLlmKey;
+  console.log('✓ 10. Phase 2 (explainability, feedback loop, LLM fallback) passed');
+
+  // ---------- 11. Phase 2: Semantic (pgvector) Search ----------
+  const { embed, embedLocal, semanticSimilarity, DIM } = require('../services/embeddings');
+  const {
+    ensureSemanticVectors,
+    rankPeople,
+    rankOpportunities,
+    rankSkills,
+  } = require('../services/semanticSearch');
+
+  // Deterministic, normalized embeddings
+  const v1 = embedLocal('programming robotics');
+  const v2 = embedLocal('programming robotics');
+  assert.strictEqual(v1.length, DIM, 'Local embedding should be DIM-length.');
+  assert.deepStrictEqual(v1, v2, 'Local embedding must be deterministic.');
+  const l2 = Math.sqrt(v1.reduce((s, x) => s + x * x, 0));
+  assert(Math.abs(l2 - 1) < 1e-9, 'Local embedding should be L2-normalized.');
+
+  // Conceptual matching: "STEM club" aligns with robotics/programming/teaching
+  const queryVec = embedLocal('help my kids school STEM club build robots');
+  const roboticsVec = embedLocal('robotics programming teaching');
+  const plumbingVec = embedLocal('plumbing pipes leak');
+  const simGood = semanticSimilarity(queryVec, roboticsVec);
+  const simBad = semanticSimilarity(queryVec, plumbingVec);
+  assert(simGood > simBad, 'STEM-club query should be closer to robotics/teaching than to plumbing.');
+  assert(simGood > 0.5, 'STEM-club query should strongly match robotics/teaching profiles.');
+
+  // Snapshot refresh populates semantic vectors for all entity types
+  const changed = await ensureSemanticVectors(getState());
+  assert(changed > 0, 'First refresh should embed entities.');
+  const vecCount = getState().semanticVectors.length;
+  assert(vecCount >= getState().users.length, 'At least one vector per user should exist.');
+  const changed2 = await ensureSemanticVectors(getState());
+  assert.strictEqual(changed2, 0, 'Repeated refresh with unchanged snapshots should be a no-op.');
+
+  // People ranking surfaces Raj (robotics/programming/teaching) for a STEM query
+  const { people } = await rankPeople(getState(), { text: 'mentor needed for a school STEM robotics club' });
+  assert(people.length > 0, 'Semantic people search should return matches.');
+  const raj = people.find((p) => p.user.name === 'Raj Malhotra');
+  assert(raj, 'Raj (robotics/teaching) should appear in STEM-club semantic results.');
+  assert(raj.similarity >= 50, `Raj should have a strong similarity score (got ${raj.similarity}).`);
+  assert(Array.isArray(raj.explain) && raj.explain.length > 0, 'Semantic results should be explainable.');
+  assert(people[0].similarity >= people[people.length - 1].similarity, 'People should be ranked by similarity desc.');
+
+  // Opportunities + skills ranked semantically
+  const opps = await rankOpportunities(getState(), { text: 'robotics mentoring for students' });
+  assert(opps.length > 0, 'Semantic opportunity search should return matches.');
+  assert(opps[0].opportunity.title.toLowerCase().includes('robotics'), 'Top opportunity should relate to robotics mentoring.');
+  const skills = await rankSkills(getState(), { text: 'writing code and building software' });
+  assert(skills.length > 0 && skills[0].skill === 'programming', 'Top skill for coding query should be programming.');
+
+  // Route integration: POST /api/search/semantic
+  const semSearch = await mockRequest(searchRouter, 'POST', '/semantic', {
+    body: { query: 'mentor for a school STEM club', communityId: undefined },
+  });
+  assert.strictEqual(semSearch.statusCode, 200, 'Semantic search endpoint should succeed.');
+  assert(Array.isArray(semSearch.jsonBody.people), 'Semantic search should return a people array.');
+  assert.strictEqual(semSearch.jsonBody.engine, 'memory', 'JSON-mode semantic search uses the in-memory engine.');
+  assert(semSearch.jsonBody.embeddingDim === DIM, 'Semantic search should report the embedding dimension.');
+  assert(semSearch.jsonBody.understanding && semSearch.jsonBody.understanding.intent, 'Semantic search should include intent understanding.');
+
+  // pgvector SQL path degrades gracefully in JSON mode
+  const pgDemo = await mockRequest(searchRouter, 'GET', '/semantic/pg?text=robotics&entityType=user');
+  assert.strictEqual(pgDemo.statusCode, 501, 'pgvector endpoint must 501 when Postgres/vector is unavailable.');
+  console.log('✓ 11. Phase 2 (semantic search, embeddings, pgvector fallback) passed');
 
   await close();
   console.log('\n[SkillMesh Test Suite] ALL 10 TEST SUITES PASSED CLEANLY.');

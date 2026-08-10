@@ -9,6 +9,11 @@ const { config } = require('../config');
 
 const JWT_SECRET = config.JWT_SECRET;
 const TOKEN_TTL_SECONDS = config.JWT_TTL_SECONDS;
+const ACCESS_TTL_SECONDS = config.JWT_ACCESS_TTL_SECONDS;
+const REFRESH_TTL_SECONDS = config.JWT_REFRESH_TTL_SECONDS;
+
+const ACCESS_COOKIE = 'skillmesh_at';
+const REFRESH_COOKIE = 'skillmesh_rt';
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -21,6 +26,33 @@ function verifyPassword(password, salt, hash) {
   return crypto.timingSafeEqual(Buffer.from(attempt), Buffer.from(hash));
 }
 
+function randomToken(bytes = 32) {
+  return crypto.randomBytes(bytes).toString('hex');
+}
+
+function sha256Hex(input) {
+  return crypto.createHash('sha256').update(String(input)).digest('hex');
+}
+
+function parseCookies(header) {
+  const out = {};
+  if (!header) return out;
+  for (const part of String(header).split(';')) {
+    const eq = part.indexOf('=');
+    if (eq === -1) continue;
+    const key = part.slice(0, eq).trim();
+    const value = part.slice(eq + 1).trim();
+    if (key) {
+      try {
+        out[key] = decodeURIComponent(value);
+      } catch {
+        out[key] = value;
+      }
+    }
+  }
+  return out;
+}
+
 function base64url(input) {
   return Buffer.from(input).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
@@ -31,15 +63,24 @@ function base64urlDecode(input) {
   return Buffer.from(input, 'base64').toString('utf-8');
 }
 
-function signToken(payload) {
+// Sign a JWT. Access tokens carry no `tokenType`; refresh tokens set
+// `tokenType: 'refresh'` so requireAuth can refuse to accept them as access.
+function signToken(payload, ttlSeconds = ACCESS_TTL_SECONDS) {
   const header = { alg: 'HS256', typ: 'JWT' };
-  const exp = Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS;
+  const exp = Math.floor(Date.now() / 1000) + ttlSeconds;
   const body = { ...payload, exp };
   const encHeader = base64url(JSON.stringify(header));
   const encBody = base64url(JSON.stringify(body));
   const sig = crypto.createHmac('sha256', JWT_SECRET).update(`${encHeader}.${encBody}`).digest();
   const encSig = base64url(sig);
   return `${encHeader}.${encBody}.${encSig}`;
+}
+
+function signRefreshToken(user) {
+  return signToken(
+    { sub: user.id, email: user.email, name: user.name, tokenType: 'refresh' },
+    REFRESH_TTL_SECONDS
+  );
 }
 
 function verifyToken(token) {
@@ -60,4 +101,9 @@ function verifyToken(token) {
   return body;
 }
 
-module.exports = { hashPassword, verifyPassword, signToken, verifyToken };
+module.exports = {
+  hashPassword, verifyPassword, signToken, verifyToken, signRefreshToken,
+  randomToken, sha256Hex, parseCookies,
+  ACCESS_COOKIE, REFRESH_COOKIE,
+  ACCESS_TTL_SECONDS, REFRESH_TTL_SECONDS,
+};

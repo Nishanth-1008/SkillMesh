@@ -4,6 +4,7 @@
 // prior-collaboration compatibility — without putting the same person on twice.
 
 const { computeTrustScore, getUserSkillNames } = require('./trust');
+const { buildExplain } = require('./explain');
 
 function skillMatches(skillName, queryToken) {
   return skillName.includes(queryToken) || queryToken.includes(skillName);
@@ -70,6 +71,13 @@ function scorePersonForTeam(state, user, neededSkills, alreadyPicked, communityI
     newCoverage,
     trustScore: trust.score,
     compatibility: compat,
+    explain: buildExplain({
+      matchedSkills: covers,
+      newCoverage,
+      trustScore: trust.score,
+      compatibility: compat,
+      availability: user.availability,
+    }),
     score: Math.round(score * 10) / 10,
   };
 }
@@ -197,14 +205,20 @@ function findHiddenExperts(state, { skills = [], communityId, limit = 10 }) {
     if (inferredHits.length === 0 && directHits.length > 0) continue; // only surface "hidden"
 
     const trust = computeTrustScore(state, user.id);
+    const reason = inferredHits.length
+      ? `Collaborated with people who have: ${inferredHits.join(', ')}`
+      : 'Related expertise via community graph';
     results.push({
       user: { id: user.id, name: user.name, location: user.location, availability: user.availability },
       statedSkills: stated,
       directHits,
       inferredHits,
-      reason: inferredHits.length
-        ? `Collaborated with people who have: ${inferredHits.join(', ')}`
-        : 'Related expertise via community graph',
+      reason,
+      explain: buildExplain({
+        inferredHits,
+        trustScore: trust.score,
+        availability: user.availability,
+      }),
       trustScore: trust.score,
       score: inferredHits.length * 8 + trust.score * 0.1,
     });

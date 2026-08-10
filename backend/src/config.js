@@ -26,6 +26,15 @@ function loadDotEnv() {
 
 loadDotEnv();
 
+if (process.env.SKILLMESH_TESTING === '1') {
+  delete process.env.DATABASE_URL;
+  delete process.env.PGHOST;
+  delete process.env.PGPORT;
+  delete process.env.PGDATABASE;
+  delete process.env.PGUSER;
+  delete process.env.PGPASSWORD;
+}
+
 function bool(v, fallback = false) {
   if (v === undefined || v === null || v === '') return fallback;
   return ['1', 'true', 'yes', 'on'].includes(String(v).toLowerCase());
@@ -76,6 +85,8 @@ const config = {
   ALLOWED_ORIGINS: allowedOrigins,
   JWT_SECRET,
   JWT_TTL_SECONDS: int(process.env.JWT_TTL_SECONDS, 60 * 60 * 24 * 7),
+  JWT_ACCESS_TTL_SECONDS: int(process.env.JWT_ACCESS_TTL_SECONDS, 60 * 60),
+  JWT_REFRESH_TTL_SECONDS: int(process.env.JWT_REFRESH_TTL_SECONDS, 60 * 60 * 24 * 30),
   DATABASE_URL,
   DATABASE_SSL: bool(process.env.DATABASE_SSL, true),
   DATABASE_POOL_MAX: int(process.env.DATABASE_POOL_MAX, 5),

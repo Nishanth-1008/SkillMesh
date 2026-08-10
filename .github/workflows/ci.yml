@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  unit-tests:
+    name: Unit & regression tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Syntax check all source files
+        run: |
+          set -e
+          for f in $(find src -name '*.js'); do
+            node --check "$f"
+          done
+      - name: Run test suite (hermetic, local JSON store)
+        run: npm test
+
+  postgres-smoke:
+    name: Postgres boot & API smoke
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: skillmesh
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/skillmesh
+      DATABASE_SSL: 'false'
+      JWT_SECRET: ci-test-secret-not-for-production
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Apply schema
+        run: npm run db:migrate
+      - name: Seed demo data
+        run: npm run db:seed
+      - name: Boot server and smoke-test the API
+        run: |
+          set -e
+          node src/server.js > server.log 2>&1 &
+          SERVER_PID=$!
+          trap "kill $SERVER_PID" EXIT
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:4000/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -sf http://localhost:4000/health | grep -q '"status":"ok"'
+          curl -sf http://localhost:4000/health | grep -q '"database":"postgres"'
+          curl -sf http://localhost:4000/api/openapi.json | grep -q '"openapi":"3.0.3"'
+          curl -sf -X POST http://localhost:4000/api/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"raj@example.com","password":"password123"}' \
+            | grep -q 'refreshToken'
+          curl -sf http://localhost:4000/api/ecosystem/hub | grep -q 'Greenwood'
+          echo "Postgres smoke OK"

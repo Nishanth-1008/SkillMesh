@@ -177,7 +177,21 @@ const App = {
     // Refresh TopNav components
     this.updateTopNavUser();
     this.updateNotificationBadge();
+    this.updateTopnavActive(route);
     window.lucide?.createIcons();
+  },
+
+  // Highlight the top-right icon that matches the current view:
+  // profile chip ← dashboard/profile, bell (alerts/inbox) ← messages.
+  updateTopnavActive(route) {
+    const profileBtn = document.getElementById('user-profile-btn');
+    if (profileBtn) {
+      profileBtn.classList.toggle('active', route === 'dashboard' || route === 'profile');
+    }
+    const bellBtn = document.getElementById('notif-bell-btn');
+    if (bellBtn) {
+      bellBtn.classList.toggle('active', route === 'messages');
+    }
   },
 
   // ---------- Top Navigation Systems ----------

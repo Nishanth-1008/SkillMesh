@@ -1,6 +1,10 @@
 // Minimal knowledge-graph visualizer. No external libs (no D3 available
 // offline), so this lays nodes out on concentric rings by type and draws
 // straight-line edges — good enough to see the mesh at Phase 1 scale.
+//
+// Viewport handling: the initial transform fits ALL nodes into the visible
+// area (nothing is ever clipped), and wheel/button zoom + drag panning are
+// clamped so the graph can never be panned out of reach.
 
 const GraphView = {
   colorFor(type) {
@@ -18,33 +22,82 @@ const GraphView = {
     const width = container.clientWidth || 800;
     const height = 520;
     const cx = width / 2, cy = height / 2;
+    const MIN_SCALE = 0.12, MAX_SCALE = 3, PAN_PAD = 16;
 
     let selectedNodeId = null;
+    let view = null; // { k, tx, ty } — persists across re-renders (node clicks)
+
+    const byType = { person: [], skill: [], community: [], organization: [], project: [] };
+    nodes.forEach((n) => { (byType[n.type] || (byType[n.type] = [])).push(n); });
+
+    const maxPerRing = Math.max(...Object.values(byType).map((l) => l.length), 1);
+    const ringScale = Math.max(1, Math.sqrt(maxPerRing / 8));
+    const ringRadius = {
+      community: Math.min(40 * ringScale, 100),
+      person: Math.min(160 * ringScale, 230),
+      skill: Math.min(240 * ringScale, 310),
+      organization: Math.min(320 * ringScale, 380),
+      project: Math.min(200 * ringScale, 280),
+    };
+
+    const positions = {};
+    Object.entries(byType).forEach(([type, list]) => {
+      const r = ringRadius[type] ?? 200;
+      list.forEach((n, i) => {
+        const angle = (2 * Math.PI * i) / Math.max(list.length, 1);
+        positions[n.id] = {
+          x: cx + r * Math.cos(angle),
+          y: cy + r * Math.sin(angle),
+        };
+      });
+    });
+
+    // Content bounds in world coordinates (node radius + label space included).
+    const NODE_EXTENT = 34;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    nodes.forEach((n) => {
+      const p = positions[n.id];
+      if (!p) return;
+      minX = Math.min(minX, p.x - NODE_EXTENT);
+      maxX = Math.max(maxX, p.x + NODE_EXTENT);
+      minY = Math.min(minY, p.y - NODE_EXTENT);
+      maxY = Math.max(maxY, p.y + NODE_EXTENT);
+    });
+    if (!isFinite(minX)) { minX = 0; maxX = width; minY = 0; maxY = height; }
+    const contentW = maxX - minX, contentH = maxY - minY;
+
+    const clampK = (k) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, k));
+    const fitK = () => {
+      const k = Math.min(width / contentW, height / contentH) * 0.94;
+      return clampK(k);
+    };
+    const clampPan = () => {
+      const cw = contentW * view.k, ch = contentH * view.k;
+      view.tx = cw <= width
+        ? (width - cw) / 2
+        : Math.min(PAN_PAD, Math.max(width - cw - PAN_PAD, view.tx));
+      view.ty = ch <= height
+        ? (height - ch) / 2
+        : Math.min(PAN_PAD, Math.max(height - ch - PAN_PAD, view.ty));
+    };
+    const resetView = () => {
+      const k = fitK();
+      view = { k, tx: (width - contentW * k) / 2, ty: (height - contentH * k) / 2 };
+      clampPan();
+    };
+    if (!view) resetView();
+
+    const zoomAt = (mx, my, factor) => {
+      const k = clampK(view.k * factor);
+      const wx = (mx - view.tx) / view.k;
+      const wy = (my - view.ty) / view.k;
+      view.k = k;
+      view.tx = mx - wx * k;
+      view.ty = my - wy * k;
+      clampPan();
+    };
 
     const renderGraph = () => {
-      const byType = { person: [], skill: [], community: [], organization: [] };
-      nodes.forEach((n) => { (byType[n.type] || (byType[n.type] = [])).push(n); });
-
-      const maxPerRing = Math.max(...Object.values(byType).map((l) => l.length), 1);
-      const ringScale = Math.max(1, Math.sqrt(maxPerRing / 8));
-      const ringRadius = {
-        community: Math.min(40 * ringScale, 100),
-        person: Math.min(160 * ringScale, 230),
-        skill: Math.min(240 * ringScale, 310),
-        organization: Math.min(320 * ringScale, 380),
-      };
-      const positions = {};
-      Object.entries(byType).forEach(([type, list]) => {
-        const r = ringRadius[type] ?? 200;
-        list.forEach((n, i) => {
-          const angle = (2 * Math.PI * i) / Math.max(list.length, 1);
-          positions[n.id] = {
-            x: cx + r * Math.cos(angle),
-            y: cy + r * Math.sin(angle),
-          };
-        });
-      });
-
       // Find connected node IDs for the selected node (person -> skill, community -> person/members)
       const connectedNodeIds = new Set();
       const connectedEdgeIds = new Set();
@@ -83,7 +136,7 @@ const GraphView = {
         const isSelected = n.id === selectedNodeId;
         const isConnected = connectedNodeIds.has(n.id);
         const color = GraphView.colorFor(n.type);
-        
+
         let radius = n.type === 'community' ? 14 : n.type === 'person' ? 10 : 7;
         let strokeColor = color;
         let strokeWidth = 1.5;
@@ -149,10 +202,19 @@ const GraphView = {
       }
 
       container.innerHTML = `
-        <svg class="graph-svg" viewBox="0 0 ${width} ${height}">
-          ${edgeLines}
-          ${nodeCircles}
-        </svg>
+        <div class="graph-shell">
+          <svg class="graph-svg" viewBox="0 0 ${width} ${height}">
+            <g class="graph-transform" transform="translate(${view.tx}, ${view.ty}) scale(${view.k})">
+              ${edgeLines}
+              ${nodeCircles}
+            </g>
+          </svg>
+          <div class="graph-toolbar" role="toolbar" aria-label="Graph zoom controls">
+            <button class="graph-tool-btn" id="graph-zoom-in" title="Zoom in" aria-label="Zoom in"><i data-lucide="zoom-in"></i></button>
+            <button class="graph-tool-btn" id="graph-zoom-out" title="Zoom out" aria-label="Zoom out"><i data-lucide="zoom-out"></i></button>
+            <button class="graph-tool-btn" id="graph-zoom-reset" title="Reset view" aria-label="Reset view"><i data-lucide="maximize-2"></i></button>
+          </div>
+        </div>
         <div class="muted" style="margin-top:10px;">
           <span class="badge" style="border-color:#4da3ff;color:#4da3ff;">● person (click)</span>
           <span class="badge" style="border-color:#4ce0ff;color:#4ce0ff;">● skill</span>
@@ -160,13 +222,79 @@ const GraphView = {
           <span class="badge" style="border-color:#ffb454;color:#ffb454;">● org</span>
           <span class="badge" style="border-color:#4ce0a0;color:#4ce0a0;">● project</span>
           &nbsp;·&nbsp; ${nodes.length} nodes, ${edges.length} edges
+          <span class="muted">&nbsp;·&nbsp; scroll to zoom · drag to pan</span>
         </div>
         ${popupHtml}`;
 
-      // Attach click events on clickable nodes (person & community)
+      const svg = container.querySelector('.graph-svg');
+
+      const getPos = (ev) => {
+        const rect = svg.getBoundingClientRect();
+        return {
+          x: (ev.clientX - rect.left) * (width / rect.width),
+          y: (ev.clientY - rect.top) * (height / rect.height),
+        };
+      };
+
+      svg.addEventListener('wheel', (ev) => {
+        ev.preventDefault();
+        const p = getPos(ev);
+        zoomAt(p.x, p.y, ev.deltaY < 0 ? 1.18 : 1 / 1.18);
+        applyTransform();
+      }, { passive: false });
+
+      let dragging = false, didDrag = false, startX = 0, startY = 0, startTx = 0, startTy = 0;
+      svg.addEventListener('pointerdown', (ev) => {
+        dragging = true;
+        didDrag = false;
+        startX = ev.clientX; startY = ev.clientY;
+        startTx = view.tx; startTy = view.ty;
+        svg.setPointerCapture(ev.pointerId);
+      });
+      svg.addEventListener('pointermove', (ev) => {
+        if (!dragging) return;
+        const dx = ev.clientX - startX, dy = ev.clientY - startY;
+        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) didDrag = true;
+        if (didDrag) {
+          view.tx = startTx + dx;
+          view.ty = startTy + dy;
+          clampPan();
+          applyTransform();
+        }
+      });
+      const endDrag = (ev) => {
+        if (!dragging) return;
+        dragging = false;
+        if (svg.hasPointerCapture && svg.hasPointerCapture(ev.pointerId)) {
+          svg.releasePointerCapture(ev.pointerId);
+        }
+      };
+      svg.addEventListener('pointerup', endDrag);
+      svg.addEventListener('pointercancel', endDrag);
+
+      const applyTransform = () => {
+        const g = container.querySelector('.graph-transform');
+        if (g) g.setAttribute('transform', `translate(${view.tx}, ${view.ty}) scale(${view.k})`);
+      };
+
+      const zoomBy = (factor) => {
+        zoomAt(width / 2, height / 2, factor);
+        applyTransform();
+      };
+
+      const zoomInBtn = container.querySelector('#graph-zoom-in');
+      const zoomOutBtn = container.querySelector('#graph-zoom-out');
+      const zoomResetBtn = container.querySelector('#graph-zoom-reset');
+      if (zoomInBtn) zoomInBtn.onclick = () => zoomBy(1.3);
+      if (zoomOutBtn) zoomOutBtn.onclick = () => zoomBy(1 / 1.3);
+      if (zoomResetBtn) zoomResetBtn.onclick = () => { resetView(); applyTransform(); };
+
+      // Attach click events on clickable nodes (person & community).
+      // A click after a drag gesture is suppressed so panning never toggles nodes.
       container.querySelectorAll('.node-clickable').forEach((el) => {
         el.onclick = (ev) => {
           ev.stopPropagation();
+          if (didDrag) return;
           const nodeId = el.getAttribute('data-id');
           selectedNodeId = selectedNodeId === nodeId ? null : nodeId;
           renderGraph();
@@ -180,6 +308,8 @@ const GraphView = {
           renderGraph();
         };
       }
+
+      window.lucide?.createIcons();
     };
 
     renderGraph();

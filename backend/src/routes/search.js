@@ -1,9 +1,14 @@
 const { Router } = require('../utils/router');
-const { getState } = require('../db');
+const { getState, save, semanticTableAvailable } = require('../db');
 const { optionalAuth } = require('../middleware/requireAuth');
+const { validate } = require('../middleware/validate');
+const { searchQuery } = require('../validation/schemas');
 const { extractSkills } = require('../nlp/skillExtractor');
 const { computeTrustScore } = require('../services/trust');
 const { buildTeam, findHiddenExperts } = require('../services/teamBuilder');
+const { buildExplain } = require('../services/explain');
+const { understandQuery } = require('../services/llm');
+const { DIM } = require('../services/embeddings');
 
 const router = new Router();
 
@@ -53,25 +58,29 @@ function scoreCandidate(state, user, extractedSkills, { communityId, urgent }) {
     matchedSkills,
     skills: userSkillNames,
     trustScore: trust.score,
+    explain: buildExplain({
+      matchedSkills,
+      trustScore: trust.score,
+      availability: user.availability,
+    }),
     score: Math.round(score * 10) / 10,
   };
 }
 
-router.post('/', optionalAuth, (req, res, next) => {
+router.post('/', optionalAuth, validate(searchQuery), async (req, res, next) => {
   try {
     const { query, communityId } = req.body;
-    if (!query || !query.trim()) {
-      const err = new Error('query is required — describe what you need in plain language');
-      err.status = 400;
-      throw err;
-    }
     const state = getState();
-    const understanding = extractSkills(query);
+    const understanding = await understandQuery(query);
+    const skills = understanding.skills || extractSkills(query).skills;
 
     // Phase 2: build_team intent → AI Team Builder
     if (understanding.intent === 'build_team') {
+      const teamSkills = skills.length >= 2
+        ? skills
+        : [...skills, 'programming', 'design', 'leadership'];
       const teamResult = buildTeam(state, {
-        skills: understanding.skills,
+        skills: teamSkills,
         communityId,
         size: 4,
       });
@@ -85,6 +94,7 @@ router.post('/', optionalAuth, (req, res, next) => {
           matchedSkills: m.covers,
           skills: m.skills,
           trustScore: m.trustScore,
+          explain: m.explain || [],
           score: m.score,
         })),
         resultCount: teamResult.team.length,
@@ -92,7 +102,7 @@ router.post('/', optionalAuth, (req, res, next) => {
     }
 
     const candidates = state.users
-      .map((u) => scoreCandidate(state, u, understanding.skills, {
+      .map((u) => scoreCandidate(state, u, skills, {
         communityId, urgent: understanding.urgent,
       }))
       .filter(Boolean)
@@ -101,7 +111,7 @@ router.post('/', optionalAuth, (req, res, next) => {
 
     // Attach hidden experts when intent suggests discovery
     const hidden = findHiddenExperts(state, {
-      skills: understanding.skills,
+      skills,
       communityId,
       limit: 5,
     });
@@ -114,6 +124,69 @@ router.post('/', optionalAuth, (req, res, next) => {
       resultCount: candidates.length,
       hiddenExperts: hidden,
     });
+  } catch (e) { next(e); }
+});
+
+// Semantic ("magic") search — ranks people, opportunities, skills, and
+// projects by embedding cosine similarity (pgvector-backed when available).
+router.post('/semantic', optionalAuth, validate(searchQuery), async (req, res, next) => {
+  try {
+    const { query, communityId } = req.body;
+    const state = getState();
+    const understanding = await understandQuery(query);
+    const { ensureSemanticVectors, rankPeople, rankOpportunities, rankSkills, rankProjects } =
+      require('../services/semanticSearch');
+
+    const changed = await ensureSemanticVectors(state);
+    if (changed > 0) save();
+
+    const viewerId = req.user ? req.user.id : undefined;
+    const [people, opportunities, skills, projects, pgAvailable] = await Promise.all([
+      rankPeople(state, { text: query, communityId, excludeUserId: viewerId, viewerId }),
+      rankOpportunities(state, { text: query, communityId }),
+      rankSkills(state, { text: query }),
+      rankProjects(state, { text: query, communityId }),
+      semanticTableAvailable(),
+    ]);
+
+    res.json({
+      query,
+      understanding,
+      people: people.people,
+      opportunities,
+      skills,
+      projects,
+      engine: people.engine,
+      pgVectorAvailable: pgAvailable,
+      embeddingDim: DIM,
+    });
+  } catch (e) { next(e); }
+});
+
+// Genuine pgvector SQL distance query (Postgres only). 501 when unavailable.
+router.get('/semantic/pg', optionalAuth, async (req, res, next) => {
+  try {
+    const { text, entityType = 'user', limit } = req.query;
+    if (!text) {
+      const err = new Error('text query param is required');
+      err.status = 400;
+      throw err;
+    }
+    const { pgVectorSearch, ensureSemanticVectors, DIM: _DIM } = require('../services/semanticSearch');
+    const state = getState();
+    await ensureSemanticVectors(state);
+
+    const rows = await pgVectorSearch(state, {
+      text: String(text),
+      entityType: ['user', 'skill', 'opportunity', 'project'].includes(entityType) ? entityType : 'user',
+      limit: Number(limit) || 10,
+    });
+    if (!rows) {
+      const err = new Error('pgvector is not available in this deployment (Postgres + vector extension required).');
+      err.status = 501;
+      throw err;
+    }
+    res.json({ engine: 'pgvector', text, entityType, matches: rows });
   } catch (e) { next(e); }
 });
 

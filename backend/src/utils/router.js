@@ -109,6 +109,17 @@ class Router {
       res.end(body);
     };
 
+    // Cookie helpers (HttpOnly sessions). Multiple Set-Cookie headers are
+    // accumulated so access + refresh cookies can be issued together.
+    const cookieHeaders = [];
+    res.cookie = (name, value, opts = {}) => {
+      cookieHeaders.push(serializeCookie(name, value, opts));
+      res.setHeader('Set-Cookie', cookieHeaders);
+    };
+    res.clearCookie = (name, opts = {}) => {
+      res.cookie(name, '', { ...opts, maxAge: 0 });
+    };
+
     // CORS — reflect only whitelisted origins; block everything else.
     const reqOrigin = req.headers['origin'] || '';
     const allowed = isOriginAllowed(reqOrigin);
@@ -207,10 +218,24 @@ function parseJsonBody(req) {
   });
 }
 
+function serializeCookie(name, value, opts = {}) {
+  const parts = [`${name}=${encodeURIComponent(value)}`];
+  if (opts.maxAge !== undefined) parts.push(`Max-Age=${opts.maxAge}`);
+  if (opts.path) parts.push(`Path=${opts.path}`);
+  if (opts.domain) parts.push(`Domain=${opts.domain}`);
+  if (opts.httpOnly) parts.push('HttpOnly');
+  if (opts.secure) parts.push('Secure');
+  if (opts.sameSite) parts.push(`SameSite=${opts.sameSite}`);
+  return parts.join('; ');
+}
+
 function sendError(res, err) {
   const status = err.status || 500;
   if (status >= 500) console.error(err);
-  res.status(status).json({ error: err.message || 'Internal server error' });
+  res.status(status).json({
+    error: err.message || 'Internal server error',
+    ...(err.details ? { details: err.details } : {}),
+  });
 }
 
 module.exports = { Router, securityHeaders, rateLimit, isOriginAllowed };

@@ -1221,6 +1221,26 @@
       "link": "#events",
       "read": false,
       "createdAt": "2026-08-09T17:53:58.624Z"
+    },
+    {
+      "id": "40e5f8c6-3c10-45ea-9fa3-6b2164be7150",
+      "userId": "9d7bfb17-bfdc-4c1b-bc9e-dc53a25df86d",
+      "type": "emergency",
+      "title": "EMERGENCY: Sector 7 power outage",
+      "body": "Matched skills: electrical. ETA ~15m.",
+      "link": "#emergency?id=4f48e0a4-702a-486e-b0c3-0ff65929d2bb",
+      "read": false,
+      "createdAt": "2026-08-10T03:42:20.260Z"
+    },
+    {
+      "id": "b39b969c-61fd-43d1-b194-c41a0b64a4ee",
+      "userId": "2928c4b1-5e2f-425a-b42d-ada99862965b",
+      "type": "emergency",
+      "title": "EMERGENCY: Sector 7 power outage",
+      "body": "Matched skills: electrical. ETA ~45m.",
+      "link": "#emergency?id=4f48e0a4-702a-486e-b0c3-0ff65929d2bb",
+      "read": false,
+      "createdAt": "2026-08-10T03:42:20.260Z"
     }
   ],
   "activity": [
@@ -1431,6 +1451,14 @@
       "type": "agent_run",
       "summary": "community_manager agent: Community Manager reviewed health (65/100) and proposed 3 actions.",
       "createdAt": "2026-08-09T17:57:09.583Z"
+    },
+    {
+      "id": "886b6766-3159-4110-b80b-c91f71c08c52",
+      "communityId": "6a0ef5df-48ca-4bd1-a4df-ed903876417b",
+      "actorId": "1a26c7e6-f5a3-4db6-803c-61d16c5cb84d",
+      "type": "emergency",
+      "summary": "Emergency opened: \"Sector 7 power outage\" (high)",
+      "createdAt": "2026-08-10T03:42:20.260Z"
     }
   ],
   "organizations": [

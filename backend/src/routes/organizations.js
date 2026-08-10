@@ -4,6 +4,9 @@ const crypto = require('crypto');
 const { Router } = require('../utils/router');
 const { getState, save } = require('../db');
 const { requireAuth, optionalAuth } = require('../middleware/requireAuth');
+const { hasOrgRole } = require('../middleware/rbac');
+const { validate } = require('../middleware/validate');
+const { organizationCreate } = require('../validation/schemas');
 const { addRelationship } = require('../graph/relationships');
 const { recordContribution } = require('../services/trust');
 const { notify, logActivity } = require('../services/notify');
@@ -33,14 +36,9 @@ router.get('/', optionalAuth, (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/', requireAuth, (req, res, next) => {
+router.post('/', requireAuth, validate(organizationCreate), (req, res, next) => {
   try {
     const { name, type, description, communityId } = req.body;
-    if (!name || !type) {
-      const err = new Error('name and type are required');
-      err.status = 400;
-      throw err;
-    }
     if (!ORG_TYPES.includes(type)) {
       const err = new Error(`type must be one of: ${ORG_TYPES.join(', ')}`);
       err.status = 400;
@@ -165,7 +163,7 @@ router.put('/:id', requireAuth, (req, res, next) => {
       err.status = 404;
       throw err;
     }
-    if (org.ownerId !== req.user.id) {
+    if (!hasOrgRole(state, req.user.id, org.id, ['owner'])) {
       const err = new Error('Only the organization owner can update it');
       err.status = 403;
       throw err;
@@ -194,10 +192,7 @@ router.post('/:id/recruit', requireAuth, (req, res, next) => {
       err.status = 404;
       throw err;
     }
-    const membership = state.organizationMembers.find(
-      (m) => m.organizationId === org.id && m.userId === req.user.id
-    );
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+    if (!hasOrgRole(state, req.user.id, org.id, ['owner', 'admin'])) {
       const err = new Error('Only org owners/admins can recruit');
       err.status = 403;
       throw err;

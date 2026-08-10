@@ -460,6 +460,31 @@ code, pre, .mono, .label-caps, .breadcrumb-container, .time-group-header, .searc
   border-color: var(--primary);
   background: var(--primary-light);
 }
+.nav-icon-btn.active,
+.user-profile-btn.active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 3px var(--primary-light), 0 0 12px var(--primary-light);
+}
+.user-profile-btn.active {
+  color: var(--text);
+}
+.nav-icon-btn.active svg,
+.user-profile-btn.active svg {
+  filter: drop-shadow(0 0 4px var(--primary-light));
+}
+.notif-bell-btn.active::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 2px var(--bg2), 0 0 8px var(--primary);
+}
 .user-name-label { font-size: 0.875rem; font-weight: 600; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chevron { font-size: 10px; opacity: 0.7; }
 .profile-menu-header { padding: 10px 14px; font-weight: 600; }
@@ -912,6 +937,88 @@ code, pre, .mono, .label-caps, .breadcrumb-container, .time-group-header, .searc
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
+/* Password visibility toggle (eye icon inside the field) */
+.password-wrap {
+  position: relative;
+}
+.password-wrap .input {
+  padding-right: 44px;
+}
+.pw-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  padding: 0;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.pw-toggle:hover {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+.pw-toggle svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* Knowledge graph viewport (pan/zoom) */
+.graph-shell {
+  position: relative;
+}
+.graph-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  touch-action: none;
+  cursor: grab;
+}
+.graph-svg:active {
+  cursor: grabbing;
+}
+.graph-toolbar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 5;
+}
+.graph-tool-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel);
+  border: 1px solid var(--panel-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.graph-tool-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+.graph-tool-btn svg {
+  width: 16px;
+  height: 16px;
+}
 label {
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -991,6 +1098,32 @@ label {
   padding: 6px 12px;
   font-size: 0.75rem;
 }
+
+/* ---------- Explainability & Feedback (Phase 2) ---------- */
+.explain {
+  margin: 8px 0 4px;
+  font-size: 0.8125rem;
+  color: var(--muted, #8b9bb4);
+}
+.explain summary {
+  cursor: pointer;
+  color: var(--primary);
+  user-select: none;
+}
+.explain ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+.explain li { margin: 2px 0; }
+.feedback-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.feedback-row .btn-sm { padding: 4px 10px; }
+.feedback-msg { font-size: 0.75rem; }
+
 
 /* ---------- Alerts & Boxes ---------- */
 .error-box, .success-box, .info-box {
