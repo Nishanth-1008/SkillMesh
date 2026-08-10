@@ -10,6 +10,18 @@ const { hashPassword } = require('./utils/auth');
 
 async function runSeed({ quiet } = {}) {
   await load();
+  // Production-safe guard: never wipe live data on a routine seed. Pass
+  // SEED_FORCE=1 or `--force` (used by `npm run db:reset`) to rebuild from
+  // scratch. The server also auto-seeds on first boot when the DB is empty.
+  const force =
+    process.env.SEED_FORCE === '1' ||
+    process.argv.includes('--force');
+  if (getState().users.length > 0 && !force) {
+    if (!quiet) {
+      console.log(`[SkillMesh] Seed skipped: ${getState().users.length} users already present. Use --force to rebuild.`);
+    }
+    return { communityId: getState().communities[0]?.id, skipped: true };
+  }
   await resetAllData();
   const state = getState();
   const { addRelationship } = require('./graph/relationships');
